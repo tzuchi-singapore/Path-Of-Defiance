@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>仙逆·逆天路 · Path of Defiance</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -219,6 +224,10 @@ const MODEL_DEF={
  frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf',quad:true,geoYaw:-Math.PI/2,h:1.2,glow:{h:188,w:16,v:0.65,s:0.35,i:2.4,pcol:0xbff4ff,rate:15}},
  prop_meteor:{url:'models/prop_meteor.glb',prop:true},prop_ice:{url:'models/prop_ice.glb',prop:true},prop_pagoda:{url:'models/prop_pagoda.glb',prop:true}
 };
+const BUILD='3.5';const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+(function selfUpdate(){try{if(!/^https?:/.test(location.protocol)||location.hostname.endsWith('claude.ai')||location.hostname.includes('claudeusercontent'))return;
+ fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(!m||m[1]===BUILD)return;
+  const k='xn_upd_'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1])}).catch(()=>{})}catch(e){}})();
 const BLOB_URL={};/* filled for the claude.ai artifact build */
 
 const $=id=>document.getElementById(id);const modalEl=document.getElementById('modal');
@@ -1204,7 +1213,7 @@ function updateSkillsUI(force){SKILLS.forEach((s,i)=>{const b=$('sk'+i);if(!b)re
 $('tAuto').onclick=()=>{save.auto=!save.auto;persist();updateSkillsUI()};
 $('tSpd').onclick=()=>{save.spd=save.spd>1?1:2;persist();updateSkillsUI()};
 $('tPause').onclick=()=>pauseGame();
-function pauseGame(){if(mode!=='battle')return;mode='pause';openModal(`<div class="mt">暂停</div><div class="mrow"><button class="btn gold" id="pRes">继续 · Resume</button><button class="btn" id="pQuit">撤退 · Retreat</button></div><div style="margin-top:10px;font-size:13px">画质 Quality: ${['低 Low','中 Med','高 High','极 Ultra'].map((t,i)=>`<button class="btn" style="padding:4px 8px;margin:2px;font-size:12px;${i===QUAL?'outline:2px solid #ffd580':''}" data-q="${i}">${t}</button>`).join('')}</div>`);
+function pauseGame(){if(mode!=='battle')return;mode='pause';openModal(`<div class="mt">暂停</div><div class="mrow"><button class="btn gold" id="pRes">继续 · Resume</button><button class="btn" id="pQuit">撤退 · Retreat</button></div><div style="margin-top:10px;font-size:13px">画质 Quality: ${['低 Low','中 Med','高 High','极 Ultra'].map((t,i)=>`<button class="btn" style="padding:4px 8px;margin:2px;font-size:12px;${i===QUAL?'outline:2px solid #ffd580':''}" data-q="${i}">${t}</button>`).join('')}</div><div style="margin-top:8px;font-size:11px;opacity:.6">v${BUILD} · ${IS_HOMESCREEN?'主屏 Home Screen':'浏览器 Browser'} · ${Math.round(window.__fps||0)} fps · ${LITE?'lite':'full'}</div>`);
   $('pRes').onclick=()=>{closeModal();mode='battle'};$('pQuit').onclick=()=>{closeModal();mode='battle';endStage(false)};document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{setQuality(+b.dataset.q,true);document.querySelectorAll('[data-q]').forEach(x=>x.style.outline=+x.dataset.q===QUAL?'2px solid #ffd580':'')})}
 
 /* ---------------- SCREENS ---------------- */
@@ -1264,7 +1273,7 @@ function tribulation(){mode='trib';$('hubBtns').style.visibility='hidden';const 
 /* ---------------- MAIN LOOP ---------------- */
 function frame(now){requestAnimationFrame(frame);if(isTouch&&QUAL<=1&&!document.hidden){if(now-(frame.lr||0)<31)return;frame.lr=now}const _t0=performance.now();try{frameBody(now);if(window.__fb)window.__fb.push(performance.now()-_t0)}catch(e){if(!frame.err){frame.err=1;showErr('Error: '+e.message);console.error(e)}}}
 function frameBody(now){let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;U_TIME.value=now/1000;
-  if(!document.hidden&&mode!=='load'){fpsAcc+=dt;fpsN++;if(fpsAcc>1.5){const fps=fpsN/fpsAcc;if(fps<27&&QUAL>0){lowFps++;if(lowFps>=2){setQuality(QUAL-1);lowFps=0}}else lowFps=0;fpsAcc=0;fpsN=0}}
+  if(!document.hidden&&mode!=='load'){fpsAcc+=dt;fpsN++;if(fpsAcc>1.5){const fps=fpsN/fpsAcc;window.__fps=fps;if(fps<27&&QUAL>0){lowFps++;if(lowFps>=2){setQuality(QUAL-1);lowFps=0}}else lowFps=0;fpsAcc=0;fpsN=0}}
   shakeV=Math.max(0,shakeV-dt*2.2);flashV=Math.max(0,flashV-dt*2);hurtV=Math.max(0,hurtV-dt*1.6);darkT-=dt;darkA=lerp(darkA,darkT>0?1:0,1-Math.pow(0.002,dt));
   let gdt=dt*(mode==='battle'?(save.spd||1):1);if(slowT>0){slowT-=dt;gdt*=0.3}
   if(hitstop>0){hitstop-=dt;gdt=0}
@@ -1287,17 +1296,17 @@ const GLB_SRC={},GLB_P={};let gltfLoader=null;
 function loadModel(key){if(GLB_P[key])return GLB_P[key];const d=MODEL_DEF[key];if(!d)return Promise.resolve(null);if(!gltfLoader)gltfLoader=new GLTFLoader();
   GLB_P[key]=new Promise(res=>{const urls=[d.url];if(BLOB_URL[key])urls.push(BLOB_URL[key]);
    const ok=g=>{const b=new THREE.Box3().setFromObject(g.scene);g.userData.h=Math.max(0.1,b.max.y-b.min.y);GLB[key]=g;res(g)};
-   const tryN=i=>gltfLoader.load(urls[i],ok,undefined,()=>{if(i+1<urls.length)tryN(i+1);else if(d.fallback)loadModel(d.fallback).then(g=>{if(g){GLB[key]=g;GLB_SRC[key]=d.fallback}res(g)});else res(null)});tryN(0)});return GLB_P[key]}
+   const tryN=i=>gltfLoader.load(urls[i].startsWith('models/')?urls[i]+'?v='+BUILD:urls[i],ok,undefined,()=>{if(i+1<urls.length)tryN(i+1);else if(d.fallback)loadModel(d.fallback).then(g=>{if(g){GLB[key]=g;GLB_SRC[key]=d.fallback}res(g)});else res(null)});tryN(0)});return GLB_P[key]}
 let loaded=0;const total=IMGS.length+2;
 function prog(){loaded++;$('loadBar').style.width=Math.round(loaded/total*100)+'%';$('loadTxt').textContent=`凝聚天地灵气… ${Math.round(loaded/total*100)}%`}
 async function boot(){
   const tl=new THREE.TextureLoader(manager);
-  const texP=IMGS.map(n=>new Promise(res=>tl.load(`img/${n}.webp`,t=>{t.colorSpace=THREE.SRGBColorSpace;TX[n]=t;prog();res()},undefined,()=>{prog();res()})));
+  const texP=IMGS.map(n=>new Promise(res=>tl.load(`img/${n}.webp?v=${BUILD}`,t=>{t.colorSpace=THREE.SRGBColorSpace;TX[n]=t;prog();res()},undefined,()=>{prog();res()})));
   const glbP=['hero_t'+save.realm,'girl'].map(k=>loadModel(k).then(prog));
   await Promise.all([...texP,...glbP]);
   try{await warmup(['hero_t'+save.realm,'girl'])}catch(e){}
   setTimeout(()=>{try{const b=save.best||0,c=Math.min(CHAPTERS.length-1,Math.floor(b/STAGES_PER));const ks=stageModels(c,0);let i=0;const nxt=()=>{if(i<ks.length)loadModel(ks[i++]).then(()=>setTimeout(nxt,300))};nxt()}catch(e){}},3000);
-  $('loadTxt').textContent='灵气已满 · Ready';$('btnEnter').style.display='block';buildSkillsUI();resize();
+  $('loadTxt').textContent='灵气已满 · Ready · v'+BUILD+(IS_HOMESCREEN?' · 主屏':'');$('btnEnter').style.display='block';buildSkillsUI();resize();
   $('btnEnter').onclick=()=>{audioInit();sfx('magic');try{if(isTouch&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}catch(_){}goHub();if(save.realm===0&&save.layer===0&&save.exp===0)setTimeout(()=>openModal(`<div class="mt">逆天之路</div><div style="max-width:440px;margin:10px auto;line-height:1.7;font-size:14px">你本是赵国山村一介凡人<b>墨尘</b>，手持凡铁剑踏上修仙路。<br>闯关历练积累<b style="color:#c9a0ff">修为</b>，修为圆满后回洞府<b style="color:#ffd36a">渡劫突破</b>，一步步从凡人蜕变为<b style="color:#fff2c0">踏天之神</b>！<br><span style="font-size:12px;opacity:.8">Farm stages for cultivation EXP, break through realms in your cave abode, and evolve from mortal to god. 左侧拖动移动 · 右侧攻击/神通 · 可开启自动战斗。</span></div><div class="mrow"><button class="btn gold" id="iOk">踏上仙途</button></div>`),400)&&0;setTimeout(()=>{const b=$('iOk');if(b)b.onclick=closeModal},500)};
   requestAnimationFrame(frame);mode='loaded';
   window.__g={THREE,Model3D,GLB,MODEL_DEF,loadModel,mkModel,materialize,dissolve,makeMeteor,makeIce,makePagoda,propModel,shatter,fxRoot,BATK,hubRoot,camera,poseFor,noBloom(){useBloom=false},renderer,setQuality,get QUAL(){return QUAL},get save(){return save},get hero(){return hero},get enemies(){return enemies},get boss(){return boss},startStage,goHub,goMap,useSkill,tribulation,addExp,get mode(){return mode},persist}
