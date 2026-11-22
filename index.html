@@ -216,7 +216,8 @@ const MODEL_DEF={
  firelord:{url:'models/boss_firelord.glb',fallback:'demon'},
  icequeen:{url:'models/boss_icequeen.glb',fallback:'girl'},
  fireimp:{url:'models/mob_fireimp.glb',fallback:'imp'},
- frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf'}
+ frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf'},
+ prop_meteor:{url:'models/prop_meteor.glb',prop:true},prop_ice:{url:'models/prop_ice.glb',prop:true},prop_pagoda:{url:'models/prop_pagoda.glb',prop:true}
 };
 const BLOB_URL={};/* filled for the claude.ai artifact build */
 
@@ -613,17 +614,19 @@ function lavaTextures(){const S=256,seeds=[...Array(46)].map(()=>[Math.random()*
   dm.data[i]=(38+crack*200)*n;dm.data[i+1]=(30+crack*80)*n;dm.data[i+2]=26*n;dm.data[i+3]=255;de.data[i]=255*crack;de.data[i+1]=(150*crack*crack+40*crack);de.data[i+2]=20*crack;de.data[i+3]=255}
  gm.putImageData(dm,0,0);ge.putImageData(de,0,0);const a=new THREE.CanvasTexture(cm),b=new THREE.CanvasTexture(ce);a.colorSpace=b.colorSpace=THREE.SRGBColorSpace;a.wrapS=a.wrapT=b.wrapS=b.wrapT=THREE.RepeatWrapping;return{map:a,em:b}}
 let LAVA=null,ICE_MAT=null,PAG=null;
-function makeMeteor(r=1){if(!LAVA)LAVA=lavaTextures();const geo=new THREE.IcosahedronGeometry(1,3),p=geo.attributes.position,sd=rand(0,100);
+function propGLB(key,size,axis='y'){const g=GLB[key];if(!g)return null;const o=g.scene.clone(true);o.traverse(c=>{if(c.isMesh){c.material=c.material.clone();c.frustumCulled=false}});const b=new THREE.Box3().setFromObject(o),sz=new THREE.Vector3();b.getSize(sz);
+ const k=size/(axis==='max'?Math.max(sz.x,sz.y,sz.z):sz.y);o.scale.setScalar(k);o.position.y=-b.min.y*k;if(axis==='max'){const c=new THREE.Vector3();b.getCenter(c);o.position.set(-c.x*k,-c.y*k,-c.z*k)}const w=new THREE.Group();w.add(o);w.userData.h=size;return w}
+function makeMeteor(r=1){const P=propGLB('prop_meteor',2*r,'max');if(P)return P;if(!LAVA)LAVA=lavaTextures();const geo=new THREE.IcosahedronGeometry(1,3),p=geo.attributes.position,sd=rand(0,100);
  for(let i=0;i<p.count;i++){_v.fromBufferAttribute(p,i).normalize();const n=1+0.13*Math.sin(_v.x*5+sd)*Math.cos(_v.y*4+sd)+0.08*Math.sin(_v.z*9+_v.x*3)+0.05*Math.sin(_v.y*13+sd);p.setXYZ(i,_v.x*n,_v.y*n,_v.z*n)}
  geo.computeVertexNormals();const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:LAVA.map,emissiveMap:LAVA.em,emissive:0xff6a1a,emissiveIntensity:2.6,roughness:0.95,metalness:0.05}));m.scale.setScalar(r);return m}
-function makeIce(o={}){if(!ICE_MAT)ICE_MAT=new THREE.MeshStandardMaterial({color:0xc8ecff,emissive:0x2a78c8,emissiveIntensity:0.55,roughness:0.06,metalness:0.15,transparent:true,opacity:0.86,flatShading:true,envMapIntensity:2.6});
+function makeIce(o={}){const P0=propGLB('prop_ice',1.8*(o.scale||1));if(P0)return P0;if(!ICE_MAT)ICE_MAT=new THREE.MeshStandardMaterial({color:0xc8ecff,emissive:0x2a78c8,emissiveIntensity:0.55,roughness:0.06,metalness:0.15,transparent:true,opacity:0.86,flatShading:true,envMapIntensity:2.6});
  const g=new THREE.Group(),n=o.n||11,sc=o.scale||1;for(let i=0;i<n;i++){const main=i===0,h=(main?1.7:rand(0.55,1.35))*sc,r=(main?0.24:rand(0.1,0.19))*sc;
   const geo=new THREE.CylinderGeometry(r*0.18,r,h,6,1).translate(0,h/2,0).toNonIndexed();geo.computeVertexNormals();const m=new THREE.Mesh(geo,ICE_MAT);
   const a=rand(0,6.28),tilt=main?rand(-0.08,0.08):rand(0.25,0.85)*(o.inward?-0.6:1);m.position.set(Math.cos(a)*(main?0:rand(0.05,0.28)*sc),0,Math.sin(a)*(main?0:rand(0.05,0.28)*sc));m.rotation.set(Math.sin(a)*tilt,rand(0,6.28),-Math.cos(a)*tilt);g.add(m)}
  const gl=glowSprite(0x9fe8ff,1.6*sc,0.5);gl.position.y=0.6*sc;g.add(gl);return g}
 function sealTexture(){return canvasTex(256,256,(g)=>{g.translate(128,128);const gr=g.createRadialGradient(0,0,20,0,0,124);gr.addColorStop(0,'#5a3a08');gr.addColorStop(1,'#2a1804');g.fillStyle=gr;g.beginPath();g.arc(0,0,120,0,7);g.fill();g.strokeStyle='#ffd25a';g.lineWidth=10;g.beginPath();g.arc(0,0,112,0,7);g.stroke();g.lineWidth=4;g.beginPath();g.arc(0,0,92,0,7);g.stroke();
   g.fillStyle='#ffe08a';g.font='900 120px serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#ffb030';g.shadowBlur=24;g.fillText('镇',0,6)})}
-function makePagoda(){if(!PAG)PAG={stone:new THREE.MeshStandardMaterial({color:0x56584e,roughness:0.85,metalness:0.1}),roof:new THREE.MeshStandardMaterial({color:0x2c4842,roughness:0.55,metalness:0.25}),gold:new THREE.MeshStandardMaterial({color:0xd8a83a,metalness:0.9,roughness:0.3,emissive:0x4a3008}),
+function makePagoda(){const P0=propGLB('prop_pagoda',8.6);if(P0)return P0;if(!PAG)PAG={stone:new THREE.MeshStandardMaterial({color:0x56584e,roughness:0.85,metalness:0.1}),roof:new THREE.MeshStandardMaterial({color:0x2c4842,roughness:0.55,metalness:0.25}),gold:new THREE.MeshStandardMaterial({color:0xd8a83a,metalness:0.9,roughness:0.3,emissive:0x4a3008}),
   seal:new THREE.MeshStandardMaterial({map:sealTexture(),emissive:0xffffff,emissiveMap:null,emissiveIntensity:0.9,roughness:0.5}),tal:new THREE.MeshStandardMaterial({color:0xf2c640,emissive:0x6a4a08,side:THREE.DoubleSide,roughness:0.8})};PAG.seal.emissiveMap=PAG.seal.map;
  const g=new THREE.Group(),P=PAG,ni=x=>x.toNonIndexed();
  const b1=new THREE.Mesh(ni(new THREE.BoxGeometry(2.3,0.36,2.3)),P.stone);b1.position.y=0.18;g.add(b1);const b2=new THREE.Mesh(ni(new THREE.BoxGeometry(1.95,0.3,1.95)),P.stone);b2.position.y=0.51;g.add(b2);
