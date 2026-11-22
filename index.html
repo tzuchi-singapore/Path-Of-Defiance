@@ -54,6 +54,9 @@ button{font:inherit;cursor:pointer}
 #hubBtns .btn img{width:30px;height:30px}
 .dot{margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:#ff3a4a;color:#fff;font-size:11px;line-height:18px;text-align:center;padding:0 4px;box-shadow:0 0 8px #ff3a4a}
 .sk.jump{background:radial-gradient(circle at 35% 30%,#e0fff4,#1f7a6a)}
+.sk.dash .cd{font-size:11px;align-items:flex-end;padding-bottom:3px;text-shadow:0 1px 2px #000,0 0 4px #000}.sk.dash.cool{filter:saturate(.5) brightness(.85)}
+.sk .pip{position:absolute;left:0;right:0;bottom:2px;font:900 9px sans-serif;color:#cffff0;text-align:center;pointer-events:none;text-shadow:0 1px 2px #000}
+.sk .pip.air{color:#fff;animation:pulse .5s infinite}
 .intro{margin:6px auto;max-width:520px;font-size:13px;color:#ffe9b0;line-height:1.5}
 .sprow{margin-top:6px;font-size:14px}.sprow b{color:#ffe08a;font-size:18px}.sprow small{opacity:.6}
 .slots{display:flex;gap:8px;justify-content:center;margin:10px 0 6px}
@@ -243,7 +246,7 @@ const MODEL_DEF={
  frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf',quad:true,geoYaw:-Math.PI/2,h:1.2,glow:{h:188,w:16,v:0.65,s:0.35,i:2.4,pcol:0xbff4ff,rate:15}},
  prop_meteor:{url:'models/prop_meteor.glb',prop:true},prop_ice:{url:'models/prop_ice.glb',prop:true},prop_pagoda:{url:'models/prop_pagoda.glb',prop:true}
 };
-const BUILD='4.0';const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+const BUILD='4.1';const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 (function selfUpdate(){try{if(!/^https?:/.test(location.protocol)||location.hostname.endsWith('claude.ai')||location.hostname.includes('claudeusercontent'))return;
  fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(!m||m[1]===BUILD)return;
   const k='xn_upd_'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1])}).catch(()=>{})}catch(e){}})();
@@ -644,7 +647,7 @@ class Model3D{
   this.rig[key]={bone,rest:bone.quaternion.clone(),ax:[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)].map(v=>v.applyQuaternion(rel))}}
  reset(){this.flash=0;this.setCut(1e5);for(const m of this.mats){if(m.userData.uFlash)m.userData.uFlash.value.set(0,0,0);m.opacity=1}this.root.visible=true;this.root.position.set(0,0,0);this.root.rotation.set(0,0,0);this.root.scale.set(1,1,1);
   this.pivot.position.set(0,0,0);this.pivot.rotation.set(0,0,0);this.pivot.scale.set(1,1,1);this.obj.scale.setScalar(this.baseScale);this.first=true;this.speed=0;this.yaw=0;this.curAct=null;if(this.mixer)this.mixer.stopAllAction();
-  this.obj.traverse(c=>{if(c.isSkinnedMesh)c.visible=true});if(this.blob&&!this.blob.parent)this.root.add(this.blob);for(const k in this.rig)this.setBone(k,null);
+  const hol=[];this.obj.traverse(c=>{if(c.userData.holo)hol.push(c)});for(const c of hol)c.parent&&c.parent.remove(c);this.obj.traverse(c=>{if(c.isSkinnedMesh)c.visible=true});if(this.blob&&!this.blob.parent)this.root.add(this.blob);for(const k in this.rig)this.setBone(k,null);
   for(const c of [...this.root.children])if(c!==this.pivot&&c!==this.blob)this.root.remove(c)}
  disposeGPU(){this.obj.traverse(c=>{if(c.isSkinnedMesh&&c.skeleton)c.skeleton.dispose()})}
  blade(a,b){const r=this.rig.wpn;if(!r||!this.wtip)return false;r.bone.updateWorldMatrix(true,false);a.copy(this.wbase).applyMatrix4(r.bone.matrixWorld);b.copy(this.wtip).applyMatrix4(r.bone.matrixWorld);return true}
@@ -697,12 +700,12 @@ const HOLO_VS='#include <common>\n#include <skinning_pars_vertex>\nvarying vec3 
 const HOLO_FS='uniform float uTime;uniform float uCut;uniform float uA;uniform vec3 uCol;varying vec3 vN;varying vec3 vW;\nvoid main(){if(vW.y>uCut)discard;vec3 V=normalize(cameraPosition-vW);float fr=pow(1.0-abs(dot(normalize(vN),V)),2.0);vec3 g=abs(fract(vW*11.0)-0.5);float grid=1.0-smoothstep(0.0,0.07,min(min(g.x,g.y),g.z));float scan=0.6+0.4*sin(vW.y*65.0-uTime*10.0);float edge=smoothstep(0.18,0.0,uCut-vW.y);vec3 c=uCol*(0.18+fr*1.5+grid*1.2)*scan+vec3(0.85,1.0,0.95)*edge*2.5;gl_FragColor=vec4(c,uA*clamp(0.22+fr+grid*0.7+edge,0.0,1.0));}';
 function holoMaterial(col){return new THREE.ShaderMaterial({uniforms:{uTime:U_TIME,uCut:{value:-99},uA:{value:1},uCol:{value:new THREE.Color(col)}},vertexShader:HOLO_VS,fragmentShader:HOLO_FS,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide})}
 function holoOverlay(meshes,mat){const out=[];for(const mesh of meshes){let h;if(mesh.isSkinnedMesh){h=new THREE.SkinnedMesh(mesh.geometry,mat);h.bind(mesh.skeleton,mesh.bindMatrix)}else h=new THREE.Mesh(mesh.geometry,mat);
-  h.frustumCulled=false;h.position.copy(mesh.position);h.quaternion.copy(mesh.quaternion);h.scale.copy(mesh.scale);mesh.parent.add(h);out.push(h)}return out}
+  h.frustumCulled=false;h.userData.holo=1;h.position.copy(mesh.position);h.quaternion.copy(mesh.quaternion);h.scale.copy(mesh.scale);mesh.parent.add(h);out.push(h)}return out}
 function objBox(o){o.updateMatrixWorld(true);return new THREE.Box3().setFromObject(o)}
 /* m: Model3D or {root,meshes,setCut} ; Tripo-style: teal wireframe scans up, light rays, then solid surface reveals */
 function materialize(m,o={}){const dur=o.dur||1.6,col=o.col??0x3affd0,mat=holoMaterial(col),holos=holoOverlay(m.meshes,mat);const box=objBox(m.root),y0=box.min.y-0.02,y1=box.max.y+0.05,cx=(box.min.x+box.max.x)/2,cz=(box.min.z+box.max.z)/2,rad=Math.max(box.max.x-box.min.x,box.max.z-box.min.z)*0.45;
  m.setCut(y0-0.05,col);const rays=new THREE.Group();if(o.rays!==false){for(let i=0;i<10;i++){const r=new THREE.Mesh(new THREE.PlaneGeometry(0.035,1).translate(0,0.5,0),addMat(col,0.7,null));r.rotation.set(rand(-1.2,1.2),rand(0,6.28),rand(-1.2,1.2));r.scale.y=rand(2,5)*(y1-y0)/3;rays.add(r)}rays.position.set(cx,y1,cz);fxRoot.add(rays)}
- addFx({dur,upd(f){const k=f.t/dur,hc=lerp(y0,y1,easeOut(Math.min(1,k/0.5))),rc=k<0.42?y0-0.05:lerp(y0,y1,eIO((k-0.42)/0.55));mat.uniforms.uCut.value=hc;mat.uniforms.uA.value=k<0.65?1:Math.max(0,1-(k-0.65)/0.35);m.setCut(rc);
+ addFx({dur,endOnClear:1,upd(f){const k=f.t/dur,hc=lerp(y0,y1,easeOut(Math.min(1,k/0.5))),rc=k<0.42?y0-0.05:lerp(y0,y1,eIO((k-0.42)/0.55));mat.uniforms.uCut.value=hc;mat.uniforms.uA.value=k<0.65?1:Math.max(0,1-(k-0.65)/0.35);m.setCut(rc);
    const p=m.root.getWorldPosition(_v);rays.position.set(p.x,hc,p.z);rays.children.forEach(r=>r.material.opacity=(k<0.6?0.7:0)*(0.5+0.5*Math.random()));
    const yy=k<0.5?hc:rc;for(let i=0;i<(o.sparks??4);i++){const a=rand(0,6.28);emit(p.x+Math.cos(a)*rad*rand(0.4,1),yy,p.z+Math.sin(a)*rad*rand(0.4,1),1,{col:[col,0xffffff],v0:0.1,v1:0.6,g:0.6,l0:0.3,l1:0.7,s0:0.05,s1:0.12})}},
   end(){for(const h of holos)h.parent&&h.parent.remove(h);fxRoot.remove(rays);disposeObj(rays);m.setCut(1e5);o.onDone&&o.onDone()}})}
@@ -825,7 +828,7 @@ function buildAdorn(tier){
   if(tier>=5){const h=new THREE.Mesh(QUAD,addMat(tier>=6?0xfff0c0:0xd0a8ff,0.9,TEX.halo));h.scale.set(1.5,1.5,1);A.add(h);hero.halo=h}
   if(tier>=6){const w=new THREE.Group();for(const sd of[-1,1])for(let i=0;i<6;i++){const f=new THREE.Mesh(QUAD,addMat(0xfff4d0,0.7,TEX.feather));f.scale.set(0.35,1.6-i*0.12,1);f.userData={sd,i};w.add(f)}A.add(w);hero.wings=w}
   if(tier>=3){const sh=[];for(const mesh of hero.m.meshes){const mat=new THREE.MeshBasicMaterial({color:R.aura,transparent:true,opacity:0.28,blending:THREE.AdditiveBlending,side:THREE.BackSide,depthWrite:false});
-    mat.onBeforeCompile=s=>{s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','vec3 transformed=vec3(position)+normal*0.014;')};let shell;if(mesh.isSkinnedMesh){shell=new THREE.SkinnedMesh(mesh.geometry,mat);shell.frustumCulled=false;mesh.parent.add(shell);shell.position.copy(mesh.position);shell.quaternion.copy(mesh.quaternion);shell.scale.copy(mesh.scale);shell.updateMatrixWorld(true);shell.bind(mesh.skeleton,mesh.bindMatrix)}else{shell=new THREE.Mesh(mesh.geometry,mat);mesh.add(shell)}sh.push(shell)}}
+    mat.onBeforeCompile=s=>{s.vertexShader=s.vertexShader.replace('#include <begin_vertex>','vec3 transformed=vec3(position)+normal*0.014;')};let shell;if(mesh.isSkinnedMesh){shell=new THREE.SkinnedMesh(mesh.geometry,mat);shell.frustumCulled=false;shell.userData.holo=1;mesh.parent.add(shell);shell.position.copy(mesh.position);shell.quaternion.copy(mesh.quaternion);shell.scale.copy(mesh.scale);shell.updateMatrixWorld(true);shell.bind(mesh.skeleton,mesh.bindMatrix)}else{shell=new THREE.Mesh(mesh.geometry,mat);shell.userData.holo=1;mesh.add(shell)}sh.push(shell)}}
 }
 function updAdorn(dt,inHub){
   const A=hero.adorn,p=hero.pos,tier=save.realm,t=performance.now()/1000;A.position.set(p.x,0,p.z);
@@ -1221,7 +1224,7 @@ function meleeHit(idx){const h=hero,R=1.9+save.realm*0.07+(idx===2?0.4:0),ang=Ma
    hitEnemy(e,[1,1.1,1.7][idx],{kb:idx===2?5:2.5});any=true;emit(e.pos.x,0.9,e.pos.z,6,{col:[col||0xffffff,0xffffff],v0:2,v1:5,l0:0.15,l1:0.35})}
   if(any){hitstop=idx===2?0.06:0.03;if(idx===2)shake(0.15)}}
 function useSkill(i){const s=eqSkill(i);if(!s||hero.dead||hero.frozen>0||hero.cd[i]>0||hero.state==='cast')return false;const lv=skLv(s.id);hero.cd[i]=s.cd*(1-0.05*(lv-1));s.fn(lv);addText(new THREE.Vector3(hero.pos.x,2.4,hero.pos.z),s.cn+FORM_CN[skForm(lv)],{size:20+skForm(lv)*3,c1:'#fff',c2:ELEM[s.el].css,vy:0.6,dur:1.1});return true}
-function jump(){const h=hero;if(!h||h.dead||h.frozen>0||h.y>0.02||mode!=='battle')return;h.vy=8.4;h.y=0.01;sfx('whoosh');emit(h.pos.x,0.1,h.pos.z,12,{col:[0xd8d0c0,0xffffff],v0:0.5,v1:2.2,up:0.5,g:0,l0:0.2,l1:0.45})}
+function jump(){const h=hero;if(!h||h.dead||h.frozen>0||mode!=='battle')return;if(h.y<=0.02&&(h.jumpCd||0)>0)return;if(h.y>0.02){if(h.dj)return;h.dj=true;h.vy=Math.max(h.vy,0)*0.3+7.6;h.flipT=0.001;sfx('whoosh');emit(h.pos.x,h.y+0.3,h.pos.z,16,{col:[heroColor(),0xffffff],v0:1,v1:3,g:0,l0:0.2,l1:0.45});ringFx(h.pos.x,h.pos.z,heroColor(),1,0.3,h.y+0.1);return}h.dj=false;h.vy=8.4;h.y=0.01;sfx('whoosh');emit(h.pos.x,0.1,h.pos.z,12,{col:[0xd8d0c0,0xffffff],v0:0.5,v1:2.2,up:0.5,g:0,l0:0.2,l1:0.45})}
 const airborne=()=>hero&&hero.y>0.42;
 function dash(){const h=hero;if(h.dashCd>0||h.dead)return;h.dashCd=0.8;h.inv=Math.max(h.inv,0.3);setHeroAnim('dash',0.22);sfx('whoosh');emit(h.pos.x,0.2,h.pos.z,10,{col:0xd8d0c0,v0:0.5,v1:2,g:0,l0:0.2,l1:0.4})}
 
@@ -1259,7 +1262,7 @@ function addExp(n,quiet){if(save.layer>=LAYERS-1){const need=expNeed(lvIdx());sa
   if(up){const st=heroStats(),ratio=hero.hp/hero.maxHp;hero.stats=st;hero.maxHp=st.hp;hero.hp=Math.max(hero.hp,st.hp*ratio);sfx('lvl');pillarFx(hero.pos.x,hero.pos.z,0xc9a0ff,7,0.9,0.9);
    addText(new THREE.Vector3(hero.pos.x,2.6,hero.pos.z),`${REALMS[save.realm].cn}·第${LAYER_CN[save.layer]}层`,{size:26,c1:'#fff',c2:'#c9a0ff',vy:0.5,dur:1.6})}return ups}
 const breakReady=()=>save.layer>=LAYERS-1&&save.exp>=expNeed(lvIdx())&&save.realm<REALMS.length-1;
-function clearFx(){for(const f of fxs)f.end&&!f.noEndOnClear&&0;fxs.length=0;fxRoot.clear();teles.length=0;parts.length=0}
+function clearFx(){for(const f of fxs)if(f.endOnClear&&f.end){try{f.end(f)}catch(e){}}fxs.length=0;fxRoot.clear();teles.length=0;parts.length=0}
 function stageModels(c,s){const ch=CHAPTERS[c],k=['hero_t'+save.realm,...ch.mobs.map(m=>MOBS[m].model)];if(s===STAGES_PER-1){const b=BOSSES[ch.boss];k.push(b.model,MOBS[b.summon].model)}if(save.realm>=2)k.push('girl');return[...new Set(k)]}
 /* pre-compile shaders off-screen so the first spawn / skill doesn't freeze the phone */
 const WARM=new Set();
@@ -1303,7 +1306,7 @@ let farmLoop=false,loopTimer=null;
 /* ---------------- UPDATE LOOP ---------------- */
 let lastT=performance.now(),fpsAcc=0,fpsN=0,lowFps=0;
 function updateBattle(dt){
-  stageT+=dt;const h=hero;h.cd=h.cd.map(c=>Math.max(0,c-dt));if(h.frozen>0){h.frozen-=dt;if(h.iceObj)h.iceObj.position.copy(h.pos);if(h.frozen<=0&&h.iceObj){shatter(h.iceObj,h.pos.clone().setY(0.8),{max:4,per:8,v0:3,v1:8,life:1.4});h.iceObj=null;shake(0.4);sfx('ice');emit(h.pos.x,1,h.pos.z,30,{col:[0xbff4ff,0xffffff],v0:2,v1:7,l0:0.3,l1:0.7});h.inv=0;hurtHero(h.iceDmg||0)}}h.dashCd-=dt;h.inv-=dt;h.comboWin-=dt;h.st+=dt;
+  stageT+=dt;const h=hero;h.cd=h.cd.map(c=>Math.max(0,c-dt));if(h.frozen>0){h.frozen-=dt;if(h.iceObj)h.iceObj.position.copy(h.pos);if(h.frozen<=0&&h.iceObj){shatter(h.iceObj,h.pos.clone().setY(0.8),{max:4,per:8,v0:3,v1:8,life:1.4});h.iceObj=null;shake(0.4);sfx('ice');emit(h.pos.x,1,h.pos.z,30,{col:[0xbff4ff,0xffffff],v0:2,v1:7,l0:0.3,l1:0.7});h.inv=0;hurtHero(h.iceDmg||0)}}h.dashCd-=dt;h.jumpCd=(h.jumpCd||0)-dt;h.inv-=dt;h.comboWin-=dt;h.st+=dt;
   if(!h.dead&&h.frozen<=0){
    let mv=moveInput();const manual=mv.l>0.15;let wantAtk=inAtk;
    if(save.auto&&!manual){const r=autoBrain();mv=r.mv;wantAtk=wantAtk||r.atk}
@@ -1311,14 +1314,15 @@ function updateBattle(dt){
    else{const slow=h.state==='attack'?0.3:h.state==='cast'?0.15:1;h.pos.x+=mv.x*h.stats.spd*slow*dt;h.pos.z+=mv.z*h.stats.spd*slow*dt;
      if(mv.l>0.15&&h.state!=='attack'){h.fx=mv.x/mv.l;h.fz=mv.z/mv.l}}
    h.pos.x=clamp(h.pos.x,B.x0,B.x1);h.pos.z=clamp(h.pos.z,B.z0,B.z1);
-   if(h.y>0||h.vy>0){h.vy-=24*dt;h.y+=h.vy*dt;if(h.y<=0){h.y=0;h.vy=0;emit(h.pos.x,0.1,h.pos.z,14,{col:[0xd8d0c0,0xffffff],v0:1,v1:3,up:0.3,g:0,l0:0.2,l1:0.45});sfx('step',0.05)}}
+   if(h.y>0||h.vy>0){h.vy-=24*dt;h.y+=h.vy*dt;if(h.y<=0){h.y=0;h.vy=0;h.dj=false;h.flipT=0;h.jumpCd=0.35;emit(h.pos.x,0.1,h.pos.z,14,{col:[0xd8d0c0,0xffffff],v0:1,v1:3,up:0.3,g:0,l0:0.2,l1:0.45});sfx('step',0.05)}}
    if(wantAtk&&(h.state!=='attack'||h.st>h.dur*0.75)&&h.state!=='cast'&&h.state!=='dash')doAttack();
    if(h.pend){h.pend.t-=dt;if(h.pend.t<=0){meleeHit(h.pend.idx);h.pend=null}}
    if(['attack','cast','hurt','dash'].includes(h.state)&&h.st>=h.dur)h.state='idle';
    if(h.state==='idle'||h.state==='run')h.state=mv.l>0.15?'run':'idle';
   }
   h.m.root.position.copy(h.pos);h.m.root.position.y=h.y;if(h.m.blob)h.m.blob.position.y=-h.y+0.02;h.m.face(Math.atan2(h.fx,h.fz+0.9*Math.abs(h.fx)),dt,14);
-  const air=h.y>0.05&&(h.state==='idle'||h.state==='run');h.m.pose(h.frozen>0?dt*0.05:dt,h.frozen>0?'frozen':air?'jump':h.state,air?clamp(0.5-h.vy/16,0,1):h.dur?h.st/h.dur:0,{idx:h.idx});updAdorn(dt);
+  const air=h.y>0.05&&(h.state==='idle'||h.state==='run');h.m.pose(h.frozen>0?dt*0.05:dt,h.frozen>0?'frozen':air?'jump':h.state,air?(h.flipT?0:clamp(0.5-h.vy/16,0,1)):h.dur?h.st/h.dur:0,{idx:h.idx});
+  if(h.flipT>0){h.flipT+=dt;const k=Math.min(1,h.flipT/0.45),th=eIO(k)*Math.PI*2,hc=0.85;const pv=h.m.pivot;pv.rotation.x+=th;pv.position.y+=hc*(1-Math.cos(th));pv.position.z-=hc*Math.sin(th);if(k>=1)h.flipT=0}updAdorn(dt);
    if(!heroTrail){heroTrail=new SwordTrail()}if(heroTrail.mesh.parent!==fxRoot)fxRoot.add(heroTrail.mesh);{const k=h.dur?h.st/h.dur:0;heroTrail.update(h.m,dt,h.state==='attack'&&k>0.28&&k<0.7,save.realm===0?0xfff2d8:REALMS[save.realm].aura||0xffffff)}
   if(ally)updAlly(dt);
   for(const e of enemies)e.update(dt);enemies=enemies.filter(e=>!e.gone);
@@ -1336,7 +1340,7 @@ const G={waitWave:false};
 function autoBrain(){const h=hero,r={mv:{x:0,z:0,l:0},atk:false};
   for(const t of teles){if(t.t>t.dur-0.75&&t.t<t.dur&&teleHit(t,h.pos.x,h.pos.z,0.5)){let ax=h.pos.x-t.x,az=h.pos.z-t.z;if(t.shape==='rect'){ax=-Math.sin(t.ang);az=Math.cos(t.ang);const v=-(h.pos.x-t.x)*Math.sin(t.ang)+(h.pos.z-t.z)*Math.cos(t.ang);if(v<0){ax=-ax;az=-az}}
    const l=Math.hypot(ax,az)||1;r.mv={x:ax/l,z:az/l,l:1};if(t.dur-t.t<0.3){if(h.dashCd<=0){h.fx=ax/l;h.fz=az/l;dash()}else if(t.dur-t.t<0.18)jump()}return r}}
-  for(const w of WAVES){const d=Math.hypot(h.pos.x-w.x,h.pos.z-w.z);if(!w.hit&&d>w.r&&d-w.r<w.v*0.32)jump()}
+  for(const w of WAVES){const d=Math.hypot(h.pos.x-w.x,h.pos.z-w.z);if(!w.hit&&d>w.r&&d-w.r<w.v*0.32&&(h.y<0.02||h.vy<0))jump()}
   for(const c of CRES)if(c.foe&&!c.done){const d=Math.hypot(h.pos.x-c.x,h.pos.z-c.z);if(d<3.2)jump()}
   const e=nearestEnemy();if(!e){return r}const dx=e.pos.x-h.pos.x,dz=e.pos.z-h.pos.z,d=Math.hypot(dx,dz)-e.radius;
   if(d>1.6){r.mv={x:dx/(d+e.radius),z:dz/(d+e.radius),l:1}}else r.atk=true;
@@ -1389,8 +1393,8 @@ function buildSkillsUI(){const w=$('skills');w.innerHTML='';
   press(atk,v=>inAtk=v,true);
   for(let i=0;i<MAX_SLOTS;i++){const b=document.createElement('button');b.className='sk';b.id='sk'+i;b.style.right=SKPOS[i][0]+'px';b.style.bottom=SKPOS[i][1]+'px';if(i===4){b.style.width=b.style.height='70px'}
    b.innerHTML=`<img id="ski${i}" src="img/skn_0.webp"><span class="cd" id="skc${i}"></span><span class="lk" id="skl${i}">🔒</span><span class="key">${i+1}</span>`;press(b,()=>useSkill(i));w.appendChild(b)}
-  const d=document.createElement('button');d.className='sk dash';d.style.right='262px';d.style.bottom='178px';d.innerHTML='闪<span class="key">K</span>';press(d,()=>dash());w.appendChild(d);
-  const j=document.createElement('button');j.className='sk dash jump';j.style.right='186px';j.style.bottom='196px';j.innerHTML='跳<span class="key">␣</span>';press(j,()=>jump());w.appendChild(j);layoutSkills()}
+  const d=document.createElement('button');d.className='sk dash';d.style.right='262px';d.style.bottom='178px';d.id='bDash';d.innerHTML='闪<span class="cd" id="dashCd"></span><span class="key">K</span>';press(d,()=>dash());w.appendChild(d);
+  const j=document.createElement('button');j.className='sk dash jump';j.style.right='186px';j.style.bottom='196px';j.id='bJump';j.innerHTML='跳<span class="cd" id="jumpCd"></span><span class="pip" id="jumpPip"></span><span class="key">␣</span>';press(j,()=>jump());w.appendChild(j);layoutSkills()}
 function refreshSkillButtons(){for(let i=0;i<MAX_SLOTS;i++){const b=$('sk'+i);if(!b)continue;const s=eqSkill(i),open=i<slotCount();b.style.display=open||i<slotCount()+1?'':'none';
   b.classList.toggle('locked',!s);$('skl'+i).innerHTML=open?'空':'🔒';const im=$('ski'+i);const src=s?`img/${(s.id==='heaven'&&skLv('heaven')>=5)?'skn_6':s.icon}.webp`:'img/skn_0.webp';if(!im.src.endsWith(src))im.src=src;
   b.style.borderColor=s?ELEM[s.el].css:'#e9c46a'}}
@@ -1399,6 +1403,9 @@ function updateSkillsUI(force){if(force)refreshSkillButtons();for(let i=0;i<MAX_
   const c=hero?hero.cd[i]:0;const el=$('skc'+i);const cd=s?s.cd*(1-0.05*(skLv(s.id)-1)):1;setP(el,lock?0:c/cd*100);setT(el,!lock&&c>0?String(Math.ceil(c)):'');b.classList.toggle('ready',!lock&&c<=0&&s.tier===2)}
   if(hero){setW($('bHp'),Math.max(0,hero.hp/hero.maxHp*100));setT($('bHpT'),`${fmt(hero.hp)} / ${fmt(hero.maxHp)}`);const need=expNeed(lvIdx());setW($('bExp'),Math.min(100,(save.exp+stageExp)/need*100));
    setT($('bName'),`墨尘 · ${REALMS[save.realm].cn} ${LAYER_CN[save.layer]}层`);if(force)$('bAv').src=`img/hero_t${save.realm}.webp`}
+  if(hero&&$('dashCd')){const h=hero,dc=Math.max(0,h.dashCd);setP($('dashCd'),dc/0.8*100);setT($('dashCd'),dc>0.05?dc.toFixed(1):'');$('bDash').classList.toggle('cool',dc>0);
+   const air=h.y>0.02,jc=Math.max(0,h.jumpCd||0),used=air&&h.dj;setP($('jumpCd'),air?(used?100:0):jc/0.35*100);setT($('jumpCd'),!air&&jc>0.05?jc.toFixed(1):'');
+   const pip=$('jumpPip');setT(pip,air?(used?'':'×1'):'×2');pip.classList.toggle('air',air&&!used);$('bJump').classList.toggle('cool',used||(!air&&jc>0))}
   if(boss){setW($('bossHp'),Math.max(0,boss.hp/boss.maxHp*100));setW($('bossLag'),Math.max(0,boss.hpLag/boss.maxHp*100))}
   $('tAuto').classList.toggle('on',!!save.auto);setT($('tSpd'),'×'+(save.spd||1));$('tSpd').classList.toggle('on',save.spd>1)}
 $('tAuto').onclick=()=>{save.auto=!save.auto;persist();updateSkillsUI()};
@@ -1522,7 +1529,7 @@ async function boot(){
   $('loadTxt').textContent='灵气已满 · Ready · v'+BUILD+(IS_HOMESCREEN?' · 主屏':'');$('btnEnter').style.display='block';buildSkillsUI();resize();
   $('btnEnter').onclick=()=>{audioInit();sfx('magic');try{if(isTouch&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}catch(_){}goHub();if(save.realm===0&&save.layer===0&&save.exp===0)setTimeout(()=>openModal(`<div class="mt">逆天之路</div><div style="max-width:440px;margin:10px auto;line-height:1.7;font-size:14px">你本是赵国山村一介凡人<b>墨尘</b>，手持凡铁剑踏上修仙路。<br>闯关历练积累<b style="color:#c9a0ff">修为</b>，修为圆满后回洞府<b style="color:#ffd36a">渡劫突破</b>，一步步从凡人蜕变为<b style="color:#fff2c0">踏天之神</b>！<br><span style="font-size:12px;opacity:.8">Farm stages for cultivation EXP, break through realms in your cave abode, and evolve from mortal to god. 左侧拖动移动 · 右侧攻击/神通 · 可开启自动战斗。</span></div><div class="mrow"><button class="btn gold" id="iOk">踏上仙途</button></div>`),400)&&0;setTimeout(()=>{const b=$('iOk');if(b)b.onclick=closeModal},500)};
   requestAnimationFrame(frame);mode='loaded';
-  window.__g={THREE,Model3D,GLB,MODEL_DEF,loadModel,mkModel,materialize,dissolve,makeMeteor,makeIce,makePagoda,propModel,shatter,fxRoot,BATK,hubRoot,camera,poseFor,noBloom(){useBloom=false},WAVES,CRES,teles,get hero(){return hero},useSkill,openSkills,jump,get stageLv(){return stageLv},renderer,setQuality,get QUAL(){return QUAL},get save(){return save},get hero(){return hero},get enemies(){return enemies},get boss(){return boss},startStage,goHub,goMap,useSkill,tribulation,addExp,get mode(){return mode},persist}
+  window.__g={THREE,Model3D,GLB,MODEL_DEF,loadModel,mkModel,materialize,dissolve,makeMeteor,makeIce,makePagoda,propModel,shatter,fxRoot,BATK,hubRoot,camera,poseFor,noBloom(){useBloom=false},goHub,WAVES,CRES,teles,get hero(){return hero},useSkill,openSkills,jump,get stageLv(){return stageLv},renderer,setQuality,get QUAL(){return QUAL},get save(){return save},get hero(){return hero},get enemies(){return enemies},get boss(){return boss},startStage,goHub,goMap,useSkill,tribulation,addExp,get mode(){return mode},persist}
 }
 resize();boot();
 </script>
