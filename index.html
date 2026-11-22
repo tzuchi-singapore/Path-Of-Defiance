@@ -172,7 +172,7 @@ button{font:inherit;cursor:pointer}
 </div>
 
 <div id="modal"><div id="mbox" class="panel"></div></div>
-<div id="toast"></div>
+<div id="toast"></div><div id="errBox" style="position:fixed;left:6px;bottom:6px;z-index:60;max-width:70vw;font:12px/1.4 monospace;color:#fff;background:rgba(160,0,20,.85);padding:6px 8px;border-radius:6px;display:none;pointer-events:none"></div>
 <div id="rotate"><div style="font-size:54px">📱↻</div>请横屏游玩<br><span style="font-size:15px;color:#bfe6ff">Rotate to landscape</span></div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -213,15 +213,17 @@ const MODEL_DEF={
  skel:{url:'models/mob_skel.glb',geoYaw:-0.7,h:1.75,glow:{h:195,w:25,v:0.7,s:0.45,i:3.2}},
  wolf:{url:'models/mob_wolf.glb',quad:true,h:1.15,glow:{h:120,w:40,v:0.42,s:0.38,i:2.8}},
  wolfking:{url:'models/boss_wolfking.glb',quad:true,geoYaw:-Math.PI/2,glow:{h:215,w:25,v:0.68,s:0.4,i:2.2,pcol:0x9fd8ff,rate:30}},
- firelord:{url:'models/boss_firelord.glb',fallback:'demon'},
- icequeen:{url:'models/boss_icequeen.glb',fallback:'girl'},
- fireimp:{url:'models/mob_fireimp.glb',fallback:'imp'},
- frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf'},
+ firelord:{url:'models/boss_firelord.glb',fallback:'demon',glow:{h:32,w:16,v:0.72,s:0.55,i:3,pcol:0xff8a2a,rate:45}},
+ icequeen:{url:'models/boss_icequeen.glb',fallback:'girl',glow:{h:188,w:16,v:0.72,s:0.35,i:2.2,pcol:0xbff4ff,rate:30}},
+ fireimp:{url:'models/mob_fireimp.glb',fallback:'imp',h:1.35,glow:{h:32,w:16,v:0.72,s:0.55,i:3,pcol:0xff8a2a,rate:20}},
+ frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf',quad:true,geoYaw:-Math.PI/2,h:1.2,glow:{h:188,w:16,v:0.65,s:0.35,i:2.4,pcol:0xbff4ff,rate:15}},
  prop_meteor:{url:'models/prop_meteor.glb',prop:true},prop_ice:{url:'models/prop_ice.glb',prop:true},prop_pagoda:{url:'models/prop_pagoda.glb',prop:true}
 };
 const BLOB_URL={};/* filled for the claude.ai artifact build */
 
 const $=id=>document.getElementById(id);
+function showErr(m){try{const b=$('errBox');b.style.display='block';b.textContent=String(m).slice(0,240)}catch(_){}}
+addEventListener('error',e=>showErr('Error: '+(e.message||e)));addEventListener('unhandledrejection',e=>showErr('Error: '+(e.reason&&e.reason.message||e.reason)));
 const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,k)=>a+(b-a)*k,pick=a=>a[Math.random()*a.length|0];
 const easeOut=k=>1-Math.pow(1-clamp(k,0,1),3),easeIn=k=>Math.pow(clamp(k,0,1),3);
 const fmt=n=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e4?(n/1e3).toFixed(1)+'K':Math.round(n)+'';
@@ -255,8 +257,8 @@ const MOBS={
  skel:{cn:'骷髅兵',model:'skel',hp:1.4,atk:1.05,spd:2.4,range:1.3,col:0x8fd0ff},
  imp:{cn:'血魔',model:'imp',hp:1.0,atk:1.3,spd:3.6,range:1.1,col:0xff3a3a},
  wraith:{cn:'星魂',model:'wraith',hp:1.2,atk:1.3,spd:2.7,range:5.5,ranged:true,proj:0x9fc8ff,col:0x7a8aff},
- fireimp:{cn:'炎魔崽',model:'fireimp',hp:1.15,atk:1.4,spd:3.6,range:1.1,col:0xff7a2a,tint:[1.55,0.75,0.45],glow:{h:20,w:30,v:0.35,s:0.45,i:3,pcol:0xff8a2a,rate:25}},
- frostwolf:{cn:'霜狼',model:'frostwolf',hp:1.2,atk:1.2,spd:3.8,range:1.2,col:0x9fe8ff,tint:[0.95,1.15,1.45],glow:{h:120,w:60,v:0.3,s:0.25,i:2,tint:0x9fe8ff,pcol:0xbff4ff,rate:20}},
+ fireimp:{cn:'炎魔崽',model:'fireimp',hp:1.15,atk:1.4,spd:3.6,range:1.1,col:0xff7a2a,fb:{tint:[1.55,0.75,0.45],glow:{h:20,w:30,v:0.35,s:0.45,i:3,pcol:0xff8a2a,rate:25}}},
+ frostwolf:{cn:'霜狼',model:'frostwolf',hp:1.2,atk:1.2,spd:3.8,range:1.2,col:0x9fe8ff,fb:{tint:[0.95,1.15,1.45],glow:{h:120,w:60,v:0.3,s:0.25,i:2,tint:0x9fe8ff,pcol:0xbff4ff,rate:20}}},
  icewraith:{cn:'冰魄',model:'wraith',hp:1.25,atk:1.35,spd:2.7,range:5.5,ranged:true,proj:0xbff4ff,col:0xbff4ff,tint:[1.1,1.35,1.6]}
 };
 const BOSSES={
@@ -265,9 +267,9 @@ const BOSSES={
  ancestor:{cn:'血祖',en:'BLOOD ANCESTOR',model:'demon',h:3.7,hpMul:32,atkMul:2.5,atks:['sweep','seals','nova','seals','pagoda','summon'],summon:'imp',tint:[1.25,0.75,0.75],col:0xff2020},
  deity:{cn:'遁天古神',en:'PRIMORDIAL GOD',model:'deity',h:3.6,float:0.6,hpMul:36,atkMul:2.6,atks:['meteor3d','beam','slam','meteor3d','swords','pagoda'],summon:'wraith',col:0xffd36a},
  firelord:{cn:'炎魔·焚天',en:'INFERNO LORD',model:'firelord',h:3.9,hpMul:40,atkMul:2.8,atks:['meteor3d','flamePillars','fireNova','meteor3d','pagoda','summon'],summon:'fireimp',col:0xff6a1a,
-   tint:[1.6,0.72,0.42],glow:{h:5,w:25,v:0.45,s:0.5,i:3.2,tint:0xff8a3a,pcol:0xff7a2a,rate:40},ptcl:[0xff6a1a,0xffc040]},
+   fb:{tint:[1.6,0.72,0.42],glow:{h:5,w:25,v:0.45,s:0.5,i:3.2,tint:0xff8a3a,pcol:0xff7a2a,rate:40}},ptcl:[0xff6a1a,0xffc040]},
  icequeen:{cn:'冰凰·寒魄',en:'FROST EMPRESS',model:'icequeen',h:3.8,float:0.35,hpMul:44,atkMul:2.9,atks:['iceCrystals','freezePrison','blizzard','iceLine','pagoda','summon'],summon:'frostwolf',col:0x9fe8ff,
-   tint:[0.72,1.02,1.45],glow:{h:330,w:40,v:0.6,s:0.15,i:1.6,tint:0x9fe8ff,pcol:0xdff8ff,rate:35},ptcl:[0xbff4ff,0xffffff]}
+   fb:{tint:[0.72,1.02,1.45],glow:{h:330,w:40,v:0.6,s:0.15,i:1.6,tint:0x9fe8ff,pcol:0xdff8ff,rate:35}},ptcl:[0xbff4ff,0xffffff]}
 };
 const CHAPTERS=[
  {cn:'青竹林',en:'Bamboo Valley',bg:'bg_ch1',gr:'gr_ch1',fog:0xcfe3d2,sky:0xbfd8e8,base:0,req:0,mobs:['wolf','bandit'],boss:'wolfking',light:[0xfff4e0,2.2]},
@@ -300,7 +302,7 @@ function sfx(n,gap=0.04){if(!AC)return;const t=performance.now()/1000;if(sLast[n
 
 /* ---------------- RENDERER ---------------- */
 const glc=$('gl'),hud=$('hud'),hg=hud.getContext('2d');
-let VW=innerWidth,VH=innerHeight;const DPR=Math.min(devicePixelRatio||1,isTouch?1.5:1.75);
+let VW=innerWidth,VH=innerHeight;const DPR=Math.min(devicePixelRatio||1,isTouch?1.3:1.75);
 const renderer=new THREE.WebGLRenderer({canvas:glc,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(DPR);renderer.setSize(VW,VH);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
 const scene=new THREE.Scene();
@@ -727,7 +729,7 @@ function updAdorn(dt,inHub){
   if(hero.wings){hero.wings.position.set(0,hh*0.62,-0.2);hero.wings.quaternion.copy(camQ);hero.wings.children.forEach(f=>{const {sd,i}=f.userData,fl=Math.sin(t*3)*0.15;f.position.set(sd*(0.35+i*0.11),0.35+i*0.04,0);f.rotation.z=-sd*(0.5+i*0.22+fl)})}
   if(tier>=1&&Math.random()<dt*(6+tier*4))emit(p.x+rand(-0.5,0.5),rand(0.1,0.3),p.z+rand(-0.4,0.4),1,{col:REALMS[tier].aura,dir:[0,1,0],v0:0.6,v1:1.6,g:0,l0:0.6,l1:1.2,s0:0.08,s1:0.18})
 }
-function buildAlly(){if(ally){ally.m.root.parent&&ally.m.root.parent.remove(ally.m.root)}ally=null;if(save.realm<2)return;
+function buildAlly(){if(ally){ally.m.root.parent&&ally.m.root.parent.remove(ally.m.root)}ally=null;if(save.realm<2||!GLB.girl)return;
   ally={m:mkModel('girl',{shadow:0.8}),pos:new THREE.Vector3(),fx:1,fz:0,state:'idle',st:0,dur:0,cd:[1.2,5,9]}}
 
 /* ---------------- ENEMIES ---------------- */
@@ -735,7 +737,7 @@ let enemies=[],eProj=[],hProj=[];
 class Mob{
  constructor(type,lv,x,z,elite=false){const d=MOBS[type];this.d=d;this.type=type;this.lv=lv;this.elite=elite;
   const md=MODEL_DEF[GLB_SRC[d.model]||d.model]||{};this.quad=!!md.quad;this.h=(md.h||1.6)*(elite?1.4:1);
-  this.m=mkModel(d.model,{h:this.h,tint:d.tint||md.tint,glow:d.glow||md.glow,shadow:this.h*(this.quad?0.7:0.5)});arena.add(this.m.root);this.m.root.position.set(x,0,z);
+  const fb=GLB_SRC[d.model]&&d.fb||{};this.m=mkModel(d.model,{h:this.h,tint:fb.tint||d.tint||md.tint,glow:fb.glow||d.glow||md.glow,shadow:this.h*(this.quad?0.7:0.5)});arena.add(this.m.root);this.m.root.position.set(x,0,z);
   const hm=elite?4:1;this.maxHp=this.hp=mobHp(lv)*d.hp*hm;this.atk=mobAtk(lv)*d.atk*(elite?1.5:1);this.def=Math.round(2*Math.pow(1.2,lv));
   this.pos=new THREE.Vector3(x,0,z);this.vel=new THREE.Vector3();this.state='spawn';this.st=0;this.cd=rand(0.5,1.2);this.alive=true;this.radius=this.h*(this.quad?0.34:0.27);this.hpShow=1;this.stun=0;this.slow=0;this.t=rand(0,9);this.float=md.float||0;
   const f=x>hero.pos.x?-1:1;this.m.yaw=Math.atan2(f,0.6);this.m.root.rotation.y=this.m.yaw;
@@ -785,7 +787,7 @@ class Boss{
  constructor(key,lv,x,z){const d=BOSSES[key];this.d=d;this.key=key;this.isBoss=true;this.lv=lv;this.alive=true;
   this.maxHp=this.hp=mobHp(lv)*d.hpMul;this.atk=mobAtk(lv)*d.atkMul;this.def=Math.round(3*Math.pow(1.2,lv));this.pos=new THREE.Vector3(x,0,z);this.vel=new THREE.Vector3();this.face=-1;
   this.state='intro';this.st=0;this.cd=2.5;this.phase=1;this.hpLag=this.maxHp;this.stun=0;this.slow=0;this.flash=0;this.t=0;this.k=0;this.anim='idle';
-  if(GLB[d.model]){const md=MODEL_DEF[GLB_SRC[d.model]||d.model];this.quad=!!md.quad;this.m=mkModel(d.model,{h:d.h,tint:d.tint||md.tint,glow:d.glow||md.glow,shadow:d.h*0.55});arena.add(this.m.root);this.m.root.position.set(x,0,z);this.radius=d.h*(this.quad?0.36:0.3);
+  if(GLB[d.model]){const md=MODEL_DEF[GLB_SRC[d.model]||d.model];this.quad=!!md.quad;const fb=GLB_SRC[d.model]&&d.fb||{};this.m=mkModel(d.model,{h:d.h,tint:fb.tint||d.tint||md.tint,glow:fb.glow||d.glow||md.glow,shadow:d.h*0.55});arena.add(this.m.root);this.m.root.position.set(x,0,z);this.radius=d.h*(this.quad?0.36:0.3);
    this.m.yaw=-Math.PI/2+0.6;this.m.root.rotation.y=this.m.yaw;materialize(this.m,{dur:1.7,col:d.col,sparks:6})}
   else{const tex=TX[d.img];this.h=d.h;this.w=d.h*tex.image.width/tex.image.height;this.mat=new THREE.MeshBasicMaterial({map:tex,alphaTest:0.4,side:THREE.DoubleSide});this.mesh=new THREE.Mesh(QUADB,this.mat);arena.add(this.mesh);
    this.blob=new THREE.Mesh(FLAT,new THREE.MeshBasicMaterial({map:TEX.blob,transparent:true,depthWrite:false}));this.blob.scale.set(this.w*0.8,1,this.w*0.4);arena.add(this.blob);this.radius=this.w*0.3}
@@ -1006,10 +1008,11 @@ function startStageNow(c,s){closeModal();clearFx();stageC=c;stageS=s;stageLv=mob
   camera.position.set(hero.pos.x+2,4.0,9.4);showBanner(`第${c+1}章 · ${ch.cn}`,`${ch.en.toUpperCase()} · STAGE ${s+1}`,'#ffe08a',1.8);
   materialize(hero.m,{dur:0.9,col:REALMS[save.realm].aura||0xffd36a,rays:false});setTimeout(()=>nextWave(),900);sfx('magic')}
 function nextWave(){if(mode!=='battle')return;wave++;const isBoss=stageS===STAGES_PER-1,ch=CHAPTERS[stageC];$('bWave').textContent=isBoss&&wave===waves?'首领现身!':`波次 ${wave}/${waves}`;
+  if(isBoss&&wave===waves&&!GLB[BOSSES[ch.boss].model]){showErr('Boss model failed to load');setTimeout(()=>endStage(true),500);return}
   if(isBoss&&wave===waves){const x=clamp(hero.pos.x+4.5,B.x0+2,B.x1-1);boss=new Boss(ch.boss,stageLv+1.5,x,0);enemies.push(boss);return}
   if(wave>1)showBanner(`第${['一','二','三'][wave-1]}波`,`WAVE ${wave}`,'#ffd36a',1.1);
   const n=6+stageS*2+stageC*2+(wave-1)*2;spawnQ=n;let i=0;const iv=setInterval(()=>{if(mode!=='battle'||i>=n){clearInterval(iv);return}
-   const type=pick(ch.mobs),side=Math.random()<0.6?1:-1,x=clamp(hero.pos.x+side*rand(4,9),B.x0+0.5,B.x1-0.5),z=rand(B.z0,B.z1),elite=(i===n-1&&wave===waves&&!isBoss);
+   let type=pick(ch.mobs);if(!GLB[MOBS[type].model]){type=ch.mobs.find(m=>GLB[MOBS[m].model]);if(!type){i++;spawnQ--;return}}const side=Math.random()<0.6?1:-1,x=clamp(hero.pos.x+side*rand(4,9),B.x0+0.5,B.x1-0.5),z=rand(B.z0,B.z1),elite=(i===n-1&&wave===waves&&!isBoss);
    enemies.push(new Mob(type,stageLv+(wave-1)*0.3,x,z,elite));i++;spawnQ--},220/timeScale())}
 function endStage(win){if(mode!=='battle')return;mode='result';$('touch').style.display='none';joy=null;inAtk=false;const key=stageC+'-'+stageS;
   const hpR=hero.hp/hero.maxHp,stars=win?(hpR>0.6?3:hpR>0.3?2:1):0;if(win){save.cleared[key]=Math.max(save.cleared[key]||0,stars);save.best=Math.max(save.best,stageC*STAGES_PER+stageS)}persist();
@@ -1130,7 +1133,7 @@ function showScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList
 function openModal(html){$('mbox').innerHTML=html;$('modal').classList.add('show')}
 function closeModal(){$('modal').classList.remove('show');clearTimeout(loopTimer)}
 function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,1600)}
-function goHub(){const ks=['hero_t'+save.realm,'girl'];if(!ks.every(k=>GLB[k])){toast('加载模型中…');Promise.all(ks.map(loadModel)).then(goHub);return}closeModal();mode='hub';$('touch').style.display='none';showScreen('hubUI');buildHub();
+function goHub(retry){const ks=['hero_t'+save.realm,'girl'];if(!retry&&!ks.every(k=>GLB[k])){toast('加载模型中…');Promise.all(ks.map(loadModel)).then(()=>goHub(true));return}if(!Object.keys(GLB).some(k=>k.startsWith('hero_t'))){showErr('Hero model failed to load — check internet and reload');return}closeModal();mode='hub';$('touch').style.display='none';showScreen('hubUI');buildHub();
   for(const e of enemies){if(e.mesh)arena.remove(e.mesh);if(e.m)arena.remove(e.m.root)}enemies=[];boss=null;
   buildHero();hubRoot.add(hero.m.root);hubRoot.add(hero.adorn);hero.pos.set(0,0,0);hero.m.yaw=0.5;
   buildAlly();if(ally){hubRoot.add(ally.m.root);ally.pos.set(-1.6,0,-0.6)}
@@ -1180,7 +1183,8 @@ function tribulation(){mode='trib';$('hubBtns').style.visibility='hidden';const 
     <div class="mrow"><button class="btn gold" id="tOk">逆天而行！</button></div>`);$('tOk').onclick=closeModal},4700)}
 
 /* ---------------- MAIN LOOP ---------------- */
-function frame(now){requestAnimationFrame(frame);let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;U_TIME.value=now/1000;
+function frame(now){requestAnimationFrame(frame);try{frameBody(now)}catch(e){if(!frame.err){frame.err=1;showErr('Error: '+e.message);console.error(e)}}}
+function frameBody(now){let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;U_TIME.value=now/1000;
   fpsAcc+=dt;fpsN++;if(fpsAcc>2){const fps=fpsN/fpsAcc;if(fps<32&&useBloom){lowFps++;if(lowFps>2){useBloom=false;toast('已自动关闭辉光以提升流畅度')}}else lowFps=0;fpsAcc=0;fpsN=0}
   shakeV=Math.max(0,shakeV-dt*2.2);flashV=Math.max(0,flashV-dt*2);hurtV=Math.max(0,hurtV-dt*1.6);darkT-=dt;darkA=lerp(darkA,darkT>0?1:0,1-Math.pow(0.002,dt));
   let gdt=dt*(mode==='battle'?(save.spd||1):1);if(slowT>0){slowT-=dt;gdt*=0.3}
@@ -1211,7 +1215,7 @@ async function boot(){
   const texP=IMGS.map(n=>new Promise(res=>tl.load(`img/${n}.webp`,t=>{t.colorSpace=THREE.SRGBColorSpace;TX[n]=t;prog();res()},undefined,()=>{prog();res()})));
   const glbP=['hero_t'+save.realm,'girl'].map(k=>loadModel(k).then(prog));
   await Promise.all([...texP,...glbP]);
-  setTimeout(()=>{const all=Object.keys(MODEL_DEF);let i=0;const nxt=()=>{if(i>=all.length)return;loadModel(all[i++]).then(()=>setTimeout(nxt,60))};nxt()},2500);
+  setTimeout(()=>{try{const b=save.best||0,c=Math.min(CHAPTERS.length-1,Math.floor(b/STAGES_PER));const ks=stageModels(c,0);let i=0;const nxt=()=>{if(i<ks.length)loadModel(ks[i++]).then(()=>setTimeout(nxt,300))};nxt()}catch(e){}},3000);
   $('loadTxt').textContent='灵气已满 · Ready';$('btnEnter').style.display='block';buildSkillsUI();resize();
   $('btnEnter').onclick=()=>{audioInit();sfx('magic');try{if(isTouch&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}catch(_){}goHub();if(save.realm===0&&save.layer===0&&save.exp===0)setTimeout(()=>openModal(`<div class="mt">逆天之路</div><div style="max-width:440px;margin:10px auto;line-height:1.7;font-size:14px">你本是赵国山村一介凡人<b>墨尘</b>，手持凡铁剑踏上修仙路。<br>闯关历练积累<b style="color:#c9a0ff">修为</b>，修为圆满后回洞府<b style="color:#ffd36a">渡劫突破</b>，一步步从凡人蜕变为<b style="color:#fff2c0">踏天之神</b>！<br><span style="font-size:12px;opacity:.8">Farm stages for cultivation EXP, break through realms in your cave abode, and evolve from mortal to god. 左侧拖动移动 · 右侧攻击/神通 · 可开启自动战斗。</span></div><div class="mrow"><button class="btn gold" id="iOk">踏上仙途</button></div>`),400)&&0;setTimeout(()=>{const b=$('iOk');if(b)b.onclick=closeModal},500)};
   requestAnimationFrame(frame);mode='loaded';
