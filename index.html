@@ -196,13 +196,13 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 /* MODEL REGISTRY — every character is a 3D GLB (static Tripo meshes are auto-rigged in code).
    To upgrade a model: drop a new GLB at the same path. Missing boss models fall back to `fallback`. */
 const MODEL_DEF={
- hero_t0:{url:'models/hero_t0.glb',h:1.75},
- hero_t1:{url:'models/hero_t1.glb',h:1.78},
- hero_t2:{url:'models/hero_t2.glb',h:1.82,glow:{h:195,w:22,v:0.7,s:0.4,i:2.4}},
- hero_t3:{url:'models/hero_t3.glb',h:1.86,glow:{h:355,w:12,v:0.6,s:0.75,i:1.6}},
- hero_t4:{url:'models/hero_t4.glb',h:1.9,glow:{h:355,w:14,v:0.62,s:0.7,i:2.2}},
- hero_t5:{url:'models/hero_t5.glb',h:1.95,glow:{h:28,w:16,v:0.8,s:0.55,i:2.4}},
- hero_t6:{url:'models/hero_t6.glb',h:2.0,glow:{h:45,w:14,v:0.82,s:0.4,i:1.8}},
+ hero_t0:{url:'models/hero_t0.glb',rigOpt:{wpn:{side:-1,hand:[-0.2, 0.37, 0.06],tip:[-0.33, 0.1, 0.2]}},h:1.75},
+ hero_t1:{url:'models/hero_t1.glb',rigOpt:{wpn:{side:-1,hand:[-0.18, 0.36, 0.05],tip:[-0.3, 0.11, 0.24]}},h:1.78},
+ hero_t2:{url:'models/hero_t2.glb',rigOpt:{wpn:{side:-1,hand:[-0.25, 0.33, 0.05],tip:[-0.33, 0.08, 0.28]}},h:1.82,glow:{h:195,w:22,v:0.7,s:0.4,i:2.4}},
+ hero_t3:{url:'models/hero_t3.glb',rigOpt:{wpn:{side:-1,hand:[-0.24, 0.36, 0.06],tip:[-0.33, 0.03, 0.25]}},h:1.86,glow:{h:355,w:12,v:0.6,s:0.75,i:1.6}},
+ hero_t4:{url:'models/hero_t4.glb',rigOpt:{wpn:{side:-1,hand:[-0.24, 0.4, 0.05],tip:[-0.43, 0.0, 0.33]}},h:1.9,glow:{h:355,w:14,v:0.62,s:0.7,i:2.2}},
+ hero_t5:{url:'models/hero_t5.glb',rigOpt:{wpn:{side:-1,hand:[-0.25, 0.4, 0.05],tip:[-0.4, 0.04, 0.31]}},h:1.95,glow:{h:28,w:16,v:0.8,s:0.55,i:2.4}},
+ hero_t6:{url:'models/hero_t6.glb',rigOpt:{wpn:{side:-1,armIn:0.19,r:0.035,hand:[-0.32,0.5,0.12],tip:[-0.34,0.0,0.3]}},h:2.0,glow:{h:45,w:14,v:0.82,s:0.4,i:1.8}},
  girl:{url:'models/girl.glb',h:1.62},
  deity:{url:'models/deity.glb',geoYaw:-Math.PI/2,rigOpt:{sh:0.3,armIn:0.28,armOut:0.4,shY:0.55,legs:false},amp:{arm:0.22,body:0.75}},
  demon:{url:'models/demon.glb',skinned:true,amp:{arm:0.85,body:0.6}},
@@ -369,7 +369,7 @@ function updParts(dt){let n=0;for(let i=parts.length-1;i>=0;i--){const p=parts[i
 const fxs=[];
 function addFx(f){f.t=0;fxs.push(f);if(f.obj)fxRoot.add(f.obj);return f}
 function updFx(dt){for(let i=fxs.length-1;i>=0;i--){const f=fxs[i];f.t+=dt;f.upd&&f.upd(f,dt);if(f.t>=f.dur){f.end&&f.end(f);if(f.obj){fxRoot.remove(f.obj);disposeObj(f.obj)}fxs.splice(i,1)}}}
-function disposeObj(o){o.traverse(c=>{if(c.geometry&&!c.geometry.userData.keep)c.geometry.dispose();if(c.material&&!c.material.userData.keep){(Array.isArray(c.material)?c.material:[c.material]).forEach(m=>m.dispose())}})}
+function disposeObj(o){o.traverse(c=>{if(c.geometry&&!c.geometry.userData.keep&&!c.isSkinnedMesh)c.geometry.dispose()})}/* materials are NOT disposed: disposing releases the shader program and Safari then re-compiles it (multi-second freezes) */
 const fxRoot=new THREE.Group();scene.add(fxRoot);
 const addMat=(col,op=1,map=TEX.glow)=>new THREE.MeshBasicMaterial({map,color:col,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
 const FLAT=new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2);FLAT.userData.keep=true;
@@ -421,18 +421,25 @@ const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const eIO=k=>{k=clamp(k,0,1);return k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2};
 const eBack=k=>{k=clamp(k,0,1);const c1=2.2,c3=c1+1;return 1+c3*Math.pow(k-1,3)+c1*Math.pow(k-1,2)};
 const Z3=[0,0,0];
-const RIG_KEYS=['hips','chest','head','armL','armR','legL','legR','back'];
+const RIG_KEYS=['hips','chest','head','armL','armR','legL','legR','back','wpn'];
 const QKEYS=['body','chest','head','fl','fr','bl','br','tail'];
 function mixPose(a,b,k,KS=RIG_KEYS){const o={};for(const key of KS){const x=a[key]||Z3,y=b[key]||Z3;o[key]=[x[0]+(y[0]-x[0])*k,x[1]+(y[1]-x[1])*k,x[2]+(y[2]-x[2])*k]}return o}
 function track(keys,k,KS){for(let i=0;i<keys.length-1;i++){const [t0,p0,ease]=keys[i],[t1,p1]=keys[i+1];if(k<=t1||i===keys.length-2){const u=(k-t0)/(t1-t0);return mixPose(p0,p1,(ease||eIO)(u),KS)}}return keys[keys.length-1][1]}
 const N={};
 const POSE={
- atk0:[[0,N,eIO],[0.32,{chest:[0.05,-0.7,0],hips:[0,-0.25,0],armR:[-1.6,0,-0.55],armL:[-0.35,0,0.45],head:[0,0.35,0],legR:[0.25,0,0],legL:[-0.2,0,0],back:[0,0,0.2]},eBack],
-       [0.52,{chest:[0.22,0.8,0],hips:[0.05,0.35,0],armR:[-1.05,0,0.75],armL:[0.35,0,0.55],head:[0.1,-0.25,0],legR:[-0.5,0,0],legL:[0.4,0,0],back:[0,0,-0.3]},eIO],[1,N]],
- atk1:[[0,N,eIO],[0.3,{chest:[0.18,0.45,0],hips:[0,0.15,0],armR:[-0.15,0,0.55],armL:[-0.4,0,0.2],head:[0.12,0,0],legR:[0.3,0,0]},eBack],
-       [0.52,{chest:[-0.25,-0.55,0],hips:[-0.05,-0.25,0],armR:[-2.5,0,-0.35],armL:[-0.7,0,0.4],head:[-0.25,0.1,0],legL:[-0.45,0,0],legR:[0.2,0,0],back:[0.35,0,0]},eIO],[1,N]],
- atk2:[[0,N,eIO],[0.38,{chest:[-0.35,-0.15,0],hips:[-0.1,0,0],armR:[-2.9,0,-0.1],armL:[-2.5,0,0.1],head:[-0.3,0,0],legL:[-0.35,0,0],legR:[0.15,0,0],back:[-0.25,0,0]},eBack],
-       [0.56,{chest:[0.55,0.1,0],hips:[0.2,0,0],armR:[-0.55,0,-0.1],armL:[-0.45,0,0.15],head:[0.25,0,0],legR:[-0.6,0,0],legL:[0.5,0,0],back:[0.6,0,0]},eIO],[1,N]],
+ /* 3-hit sword combo built around the weapon wrist (wpn): wind-up -> snap -> follow-through -> recover */
+ atk0:[[0,N,eIO],
+       [0.30,{armR:[-2.35,0.25,-0.75],wpn:[-0.45,0.2,0],armL:[-0.5,0,0.5],chest:[-0.12,0.25,0],hips:[0,0.12,0],head:[-0.08,-0.15,0],legL:[-0.15,0,0],legR:[0.2,0,0],back:[0,0,0.2]},eBack],
+       [0.44,{armR:[-1.05,-0.3,0.45],wpn:[0.15,-0.25,0],armL:[0.35,0,0.35],chest:[0.28,-0.45,0],hips:[0.08,-0.25,0],head:[0.1,0.22,0],legL:[0.45,0,0],legR:[-0.45,0,0],back:[0.2,0,-0.25]},eIO],
+       [0.62,{armR:[-0.78,-0.25,0.5],wpn:[0.35,-0.2,0],armL:[0.3,0,0.3],chest:[0.22,-0.38,0],hips:[0.06,-0.2,0],head:[0.08,0.18,0],legL:[0.38,0,0],legR:[-0.38,0,0]},eIO],[1,N]],
+ atk1:[[0,N,eIO],
+       [0.26,{armR:[-0.9,0.2,0.85],wpn:[0.1,0.6,0],armL:[-0.3,0,0.3],chest:[0.08,0.2,0],hips:[0,0.1,0],head:[0,-0.1,0],legR:[0.25,0,0],back:[0,0,-0.2]},eBack],
+       [0.42,{armR:[-1.55,0,-0.45],wpn:[-0.25,-0.1,0],armL:[-0.6,0,0.65],chest:[-0.05,-0.38,0],hips:[0,-0.22,0],head:[-0.05,0.2,0],legL:[-0.4,0,0],legR:[0.35,0,0],back:[0,0,0.3]},eIO],
+       [0.6,{armR:[-1.45,0,-0.65],wpn:[-0.2,-0.25,0],armL:[-0.5,0,0.6],chest:[-0.05,-0.32,0],hips:[0,-0.18,0],legL:[-0.35,0,0],legR:[0.3,0,0]},eIO],[1,N]],
+ atk2:[[0,N,eIO],
+       [0.36,{armR:[-2.95,0,-0.12],wpn:[-0.85,0,0],armL:[-2.75,0,0.12],chest:[-0.32,0,0],hips:[-0.08,0,0],head:[-0.28,0,0],legL:[-0.35,0,0],legR:[0.2,0,0],back:[-0.3,0,0]},eBack],
+       [0.5,{armR:[-0.95,0,-0.1],wpn:[0.35,0,0],armL:[-0.85,0,0.1],chest:[0.36,0,0],hips:[0.12,0,0],head:[0.18,0,0],legR:[-0.6,0,0],legL:[0.5,0,0],back:[0.3,0,0]},eIO],
+       [0.66,{armR:[-0.8,0,-0.1],wpn:[0.45,0,0],armL:[-0.7,0,0.1],chest:[0.3,0,0],hips:[0.1,0,0],head:[0.15,0,0],legR:[-0.5,0,0],legL:[0.42,0,0],back:[0.25,0,0]},eIO],[1,N]],
  cast:{chest:[-0.15,0,0],head:[-0.15,0,0],armL:[-1.45,0,0.3],armR:[-0.8,0,-0.55],hips:[-0.04,0,0]},
  hurt:[[0,{chest:[-0.45,0,0.12],head:[-0.4,0.15,0],armL:[0.15,0,0.7],armR:[0.15,0,-0.7],hips:[-0.12,0,0],back:[0.4,0,0]},eIO],[1,N]],
  dash:{chest:[0.5,0,0],head:[-0.3,0,0],armL:[0.95,0,0.3],armR:[0.95,0,-0.3],legL:[-0.7,0,0],legR:[0.6,0,0],back:[0.75,0,0]},
@@ -444,8 +451,8 @@ const POSE={
 };
 function poseFor(st,k,t,o){
  const idx=o.idx||0;let p;
- if(st==='idle'||st==='float'){const b=Math.sin(t*2.2);p={chest:[0.035*b,0.03*Math.sin(t*0.7),0],head:[-0.025*Math.sin(t*2.2+0.6),0.08*Math.sin(t*0.5),0],armL:[0.04*Math.sin(t*2.2+0.4),0,0.05+0.04*b],armR:[0.04*Math.sin(t*2.2+0.4),0,-0.05-0.04*b],hips:[0,0.02*Math.sin(t*0.7),0]}}
- else if(st==='run'){const ph=t*(o.cad||12),s=Math.sin(ph),c=Math.cos(ph*2);p={legL:[-0.6*s,0,0],legR:[0.6*s,0,0],armL:[0.55*s,0,0.12],armR:[-0.55*s,0,-0.12],hips:[0.05,0.18*s,0],chest:[0.2+0.04*c,-0.24*s,0],head:[-0.12,0.1*s,0]}}
+ if(st==='idle'||st==='float'){const b=Math.sin(t*2.2);p={chest:[0.035*b,0.03*Math.sin(t*0.7),0],head:[-0.025*Math.sin(t*2.2+0.6),0.08*Math.sin(t*0.5),0],armL:[0.04*Math.sin(t*2.2+0.4),0,0.05+0.04*b],armR:[0.04*Math.sin(t*2.2+0.4),0,-0.05-0.04*b],wpn:[0.05*Math.sin(t*1.7),0.04*Math.sin(t*1.1),0],hips:[0,0.02*Math.sin(t*0.7),0]}}
+ else if(st==='run'){const ph=t*(o.cad||12),s=Math.sin(ph),c=Math.cos(ph*2);p={legL:[-0.6*s,0,0],legR:[0.6*s,0,0],armL:[0.55*s,0,0.12],armR:[-0.55*s,0,-0.12],wpn:[-0.25-0.15*s,0,0],hips:[0.05,0.18*s,0],chest:[0.2+0.04*c,-0.24*s,0],head:[-0.12,0.1*s,0]}}
  else if(st==='attack')p=track(POSE['atk'+Math.min(2,idx)],k);
  else if(st==='cast'){const w=Math.sin(t*14)*0.05;p=mixPose(N,POSE.cast,1);p.armL=[p.armL[0]+w,0,p.armL[2]];p.armR=[p.armR[0]-w,0,p.armR[2]]}
  else if(st==='hurt')p=track(POSE.hurt,k);
@@ -472,7 +479,7 @@ function poseQuad(st,k,t,o){
 /* ---- auto-rig ---- */
 const RIG_CACHE=new WeakMap(),GEO_ROT=new Map();
 function rotGeo(geo,yaw){if(!yaw)return geo;const k=geo.uuid+':'+yaw;if(!GEO_ROT.has(k)){const g=geo.clone();g.rotateY(yaw);GEO_ROT.set(k,g)}return GEO_ROT.get(k)}
-function setSkin(geo,n,fn){const si=new Uint16Array(n*4),sw=new Float32Array(n*4),w=new Float32Array(9);
+function setSkin(geo,n,fn){const si=new Uint16Array(n*4),sw=new Float32Array(n*4),w=new Float32Array(10);
  for(let i=0;i<n;i++){w.fill(0);fn(i,w);const idx=[...w.keys()].sort((a,b)=>w[b]-w[a]).slice(0,4);let s=0;for(const j of idx)s+=w[j];for(let k=0;k<4;k++){si[i*4+k]=idx[k];sw[i*4+k]=s>0?w[idx[k]]/s:(k===0?1:0)}}
  geo.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));geo.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4))}
 function computeSkin(geo,R={}){
@@ -480,13 +487,43 @@ function computeSkin(geo,R={}){
  geo.computeBoundingBox();const bb=geo.boundingBox,y0=bb.min.y,H=bb.max.y-bb.min.y,cx=(bb.min.x+bb.max.x)/2,cz=(bb.min.z+bb.max.z)/2;
  const J={root:[cx,y0,cz],hips:[cx,y0+.26*H,cz],chest:[cx,y0+.42*H,cz],head:[cx,y0+.56*H,cz],armL:[cx+SH*H,y0+(R.shY??.52)*H,cz],armR:[cx-SH*H,y0+(R.shY??.52)*H,cz],legL:[cx+.055*H,y0+.24*H,cz],legR:[cx-.055*H,y0+.24*H,cz],back:[cx,y0+.55*H,cz-.05*H]};
  const NAMES=['root','hips','chest','head','armL','armR','legL','legR','back'],PAR={hips:'root',chest:'hips',head:'chest',armL:'chest',armR:'chest',legL:'hips',legR:'hips',back:'chest'};
+ const W=R.wpn,ai=W?(W.side<0?5:4):0;let HH,TT,SS;
+ if(W){HH=W.hand;TT=W.tip;SS=[W.side*SH*0.85,(R.shY??.52),0];J.wpn=[cx+HH[0]*H,y0+HH[1]*H,cz+HH[2]*H];NAMES.push('wpn');PAR.wpn=W.side<0?'armR':'armL';
+  J[W.side<0?'armR':'armL']=[cx+SS[0]*H,y0+SS[1]*H,cz]}
+ const segD=(px,py,pz,A,B)=>{const ax=B[0]-A[0],ay=B[1]-A[1],az=B[2]-A[2],L=ax*ax+ay*ay+az*az;let t=((px-A[0])*ax+(py-A[1])*ay+(pz-A[2])*az)/L;const tc=Math.max(0,Math.min(1,t));const dx=px-A[0]-ax*tc,dy=py-A[1]-ay*tc,dz=pz-A[2]-az*tc;return[Math.sqrt(dx*dx+dy*dy+dz*dz),t]};
  const pos=geo.attributes.position;
+ if(W){/* fit the real blade axis: PCA of vertices near the rough hand->tip line */
+  let C=[0,0,0],P=[];for(let i=0;i<pos.count;i+=2){const q=[(pos.getX(i)-cx)/H,(pos.getY(i)-y0)/H,(pos.getZ(i)-cz)/H];const [d,t]=segD(q[0],q[1],q[2],HH,TT);if(d<0.085&&t>0.18&&t<1.2){P.push(q);C[0]+=q[0];C[1]+=q[1];C[2]+=q[2]}}
+  if(P.length>30){C=C.map(v=>v/P.length);const M=[[0,0,0],[0,0,0],[0,0,0]];for(const q of P){const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]];for(let a=0;a<3;a++)for(let b=0;b<3;b++)M[a][b]+=d[a]*d[b]}
+   let v=[TT[0]-HH[0],TT[1]-HH[1],TT[2]-HH[2]];for(let it=0;it<30;it++){const nv=[0,1,2].map(a=>M[a][0]*v[0]+M[a][1]*v[1]+M[a][2]*v[2]);const l=Math.hypot(...nv)||1;v=nv.map(x=>x/l)}
+   if(v[0]*(TT[0]-HH[0])+v[1]*(TT[1]-HH[1])+v[2]*(TT[2]-HH[2])<0)v=v.map(x=>-x);
+   let mx=-1e9,ds=[];for(const q of P){const pr=(q[0]-C[0])*v[0]+(q[1]-C[1])*v[1]+(q[2]-C[2])*v[2];mx=Math.max(mx,pr);const pp=[C[0]+v[0]*pr,C[1]+v[1]*pr,C[2]+v[2]*pr];ds.push(Math.hypot(q[0]-pp[0],q[1]-pp[1],q[2]-pp[2]))}
+   ds.sort((a,b)=>a-b);const ph=(HH[0]-C[0])*v[0]+(HH[1]-C[1])*v[1]+(HH[2]-C[2])*v[2];
+   TT=[C[0]+v[0]*(mx+0.02),C[1]+v[1]*(mx+0.02),C[2]+v[2]*(mx+0.02)];HH=[C[0]+v[0]*ph,C[1]+v[1]*ph,C[2]+v[2]*ph];
+   W.r=W.r||Math.min(0.065,Math.max(0.03,ds[Math.floor(ds.length*0.85)]*1.35));J.wpn=[cx+HH[0]*H,y0+HH[1]*H,cz+HH[2]*H]}}
+  /* keep only geometry that is actually joined to the blade (stops capes/robes near the hand being dragged along) */
+  if(W){W.r=W.r||0.04;const n=pos.count,cand=new Uint8Array(n),rel=i=>[(pos.getX(i)-cx)/H,(pos.getY(i)-y0)/H,(pos.getZ(i)-cz)/H];
+  for(let i=0;i<n;i++){const q=rel(i),[d,t]=segD(q[0],q[1],q[2],HH,TT);if((t>0.02&&t<1.12&&d<W.r)||Math.hypot(q[0]-HH[0],q[1]-HH[1],q[2]-HH[2])<0.078)cand[i]=1+(d<W.r*0.6&&t>0.45&&t<0.95?1:0)}
+  const key=new Map(),rep=new Int32Array(n);for(let i=0;i<n;i++){if(!cand[i]){rep[i]=i;continue}const k=Math.round(pos.getX(i)*2e4)+','+Math.round(pos.getY(i)*2e4)+','+Math.round(pos.getZ(i)*2e4);if(!key.has(k))key.set(k,i);rep[i]=key.get(k)}
+  const adj=new Map(),idx=geo.index?geo.index.array:null,add=(a,b)=>{a=rep[a];b=rep[b];if(a===b)return;let l=adj.get(a);if(!l)adj.set(a,l=[]);l.push(b)};
+  const nt=idx?idx.length:n;for(let t=0;t<nt;t+=3){const a=idx?idx[t]:t,b=idx?idx[t+1]:t+1,c=idx?idx[t+2]:t+2;if(cand[a]&&cand[b]){add(a,b);add(b,a)}if(cand[b]&&cand[c]){add(b,c);add(c,b)}if(cand[a]&&cand[c]){add(a,c);add(c,a)}}
+  const ok=new Uint8Array(n),st=[];for(let i=0;i<n;i++)if(cand[i]===2&&!ok[rep[i]]){ok[rep[i]]=1;st.push(rep[i])}
+  while(st.length){const v=st.pop(),l=adj.get(v);if(l)for(const u of l)if(!ok[u]){ok[u]=1;st.push(u)}}
+  W.ok=i=>ok[rep[i]]===1}
  setSkin(geo,pos.count,(i,w)=>{const h=(pos.getY(i)-y0)/H,dx=(pos.getX(i)-cx)/H,dz=(pos.getZ(i)-cz)/H;
   const head=sm(0.5,0.6,h),chest=sm(0.3,0.42,h)*(1-head);w[3]=head;w[2]=chest;w[1]=1-head-chest;
   const arm=sm(AI,AO,Math.abs(dx))*sm(0.26,0.34,h)*(1-sm(0.55,0.62,h));if(arm>0){for(const j of [1,2,3])w[j]*=1-arm;w[dx>0?4:5]=arm}
   const leg=LEG?1-sm(0.1,0.25,h):0;if(leg>0){const r=clamp(0.5-dx/0.05*0.5,0,1);for(const j of [1,2,3,4,5])w[j]*=1-leg;w[6]+=leg*(1-r);w[7]+=leg*r}
-  const bk=0.85*sm(0.05,0.16,-dz)*sm(0.18,0.34,h)*(1-sm(0.78,0.92,h));if(bk>0){for(let j=1;j<8;j++)w[j]*=1-bk;w[8]+=bk}});
- const r={J,NAMES,PAR};RIG_CACHE.set(geo,r);return r}
+  const bk=0.85*sm(0.05,0.16,-dz)*sm(0.18,0.34,h)*(1-sm(0.78,0.92,h));if(bk>0){for(let j=1;j<8;j++)w[j]*=1-bk;w[8]+=bk}
+  if(W){const [db,tb]=segD(dx,h,dz,HH,TT),rb=W.r||0.04,dh=Math.hypot(dx-HH[0],h-HH[1],dz-HH[2]);
+   let wb=(tb>0.04&&tb<1.1)?1-sm(rb*0.75,rb,db):0;wb=Math.max(wb,1-sm(0.045,0.075,dh));if(W.ok&&!W.ok(i))wb=0;
+   const [da]=segD(dx,h,dz,SS,HH);let wa=(dx*W.side>(W.armIn||0.07))?1-sm(0.075,0.11,da):0;
+   let s=0;for(let j=0;j<9;j++)s+=w[j];s=s||1;const cur=w[ai]/s;wa=Math.max(wa,cur);
+   for(let j=0;j<9;j++)w[j]=w[j]/s*(1-wb)*(1-wa);w[ai]+=(1-wb)*wa;w[9]=wb}});
+ if(W&&geo.index){/* cut the thin triangles that weld the blade to cloth: they would stretch into sheets when the sword swings */
+  const si=geo.attributes.skinIndex,sw=geo.attributes.skinWeight,ix=geo.index.array,wv=v=>{for(let k=0;k<4;k++)if(si.getComponent(v,k)===9)return sw.getComponent(v,k);return 0};
+  let cut=0;for(let t=0;t<ix.length;t+=3){const a=wv(ix[t]),b=wv(ix[t+1]),c=wv(ix[t+2]);const mx=Math.max(a,b,c),mn=Math.min(a,b,c);let cutIt=mx-mn>0.55;if(!cutIt&&mx>0.02&&mn<0.98){const P=geo.attributes.position,e=(u,v)=>Math.hypot(P.getX(u)-P.getX(v),P.getY(u)-P.getY(v),P.getZ(u)-P.getZ(v));cutIt=Math.max(e(ix[t],ix[t+1]),e(ix[t+1],ix[t+2]),e(ix[t],ix[t+2]))>0.03*H}if(cutIt){ix[t+1]=ix[t+2]=ix[t];cut++}}geo.index.needsUpdate=true;R.cut=cut}
+ const r={J,NAMES,PAR};if(W){const a=0.22;r.wbase=[(HH[0]+(TT[0]-HH[0])*a)*H+cx-J.wpn[0],(HH[1]+(TT[1]-HH[1])*a)*H+y0-J.wpn[1],(HH[2]+(TT[2]-HH[2])*a)*H+cz-J.wpn[2]];r.wtip=[TT[0]*H+cx-J.wpn[0],TT[1]*H+y0-J.wpn[1],TT[2]*H+cz-J.wpn[2]]}RIG_CACHE.set(geo,r);return r}
 function computeSkinQuad(geo){
  if(RIG_CACHE.has(geo))return RIG_CACHE.get(geo);
  geo.computeBoundingBox();const bb=geo.boundingBox,y0=bb.min.y,H=bb.max.y-bb.min.y,cx=(bb.min.x+bb.max.x)/2,cz=(bb.min.z+bb.max.z)/2,L=bb.max.z-bb.min.z,Wd=(bb.max.x-bb.min.x)/2;
@@ -500,12 +537,12 @@ function computeSkinQuad(geo){
   const leg=1-sm(0.3,0.46,h);if(leg>0){const fr=sm(-0.06,0.08,u),r=clamp(0.5-dx*1.5,0,1);for(const j of [1,2,3,8])w[j]*=1-leg;w[4]+=leg*fr*(1-r);w[5]+=leg*fr*r;w[6]+=leg*(1-fr)*(1-r);w[7]+=leg*(1-fr)*r}});
  const r={J,NAMES,PAR};RIG_CACHE.set(geo,r);return r}
 function autoRig(mesh,R,quad){
- const geo=mesh.geometry,{J,NAMES,PAR}=quad?computeSkinQuad(geo):computeSkin(geo,R);const bones={};
+ const geo=mesh.geometry,RR=quad?computeSkinQuad(geo):computeSkin(geo,R),{J,NAMES,PAR}=RR;const bones={};
  for(const nm of NAMES){const b=new THREE.Bone();b.name=nm;bones[nm]=b}
  for(const nm of NAMES){const p=J[nm];if(PAR[nm]){const q=J[PAR[nm]];bones[nm].position.set(p[0]-q[0],p[1]-q[1],p[2]-q[2]);bones[PAR[nm]].add(bones[nm])}else bones[nm].position.set(p[0],p[1],p[2])}
  const sk=new THREE.SkinnedMesh(geo,mesh.material);sk.position.copy(mesh.position);sk.quaternion.copy(mesh.quaternion);sk.scale.copy(mesh.scale);sk.frustumCulled=false;
  sk.add(bones.root);const par=mesh.parent;par.add(sk);par.remove(mesh);sk.updateMatrixWorld(true);sk.bind(new THREE.Skeleton(NAMES.map(n=>bones[n])));
- return {sk,bones,keys:NAMES.slice(1)}}
+ return {sk,bones,keys:NAMES.slice(1),wtip:RR.wtip,wbase:RR.wbase}}
 const MIXAMO_MAP={hips:'Hips',chest:'Spine1',chest2:'Spine2',head:'Head',armL:'LeftArm',armR:'RightArm',foreL:'LeftForeArm',foreR:'RightForeArm',legL:'LeftUpLeg',legR:'RightUpLeg',kneeL:'LeftLeg',kneeR:'RightLeg'};
 class Spring{constructor(k=90,d=11){this.k=k;this.d=d;this.x=0;this.v=0}step(target,dt){const a=(target-this.x)*this.k-this.v*this.d;this.v+=a*dt;this.x+=this.v*dt;return this.x}}
 
@@ -537,11 +574,11 @@ function glowPoints(geo,gl){const key=geo.uuid+gl.tex.uuid;if(EMIT_CACHE.has(key
 
 class Model3D{
  constructor(gltf,o={}){
-  this.o=o;this.root=new THREE.Group();this.pivot=new THREE.Group();this.root.add(this.pivot);
+  this.o=o;this.root=new THREE.Group();this.root.userData.model=1;this.pivot=new THREE.Group();this.root.add(this.pivot);
   this.obj=o.skinned?skClone(gltf.scene):gltf.scene.clone(true);
   this.mats=[];this.meshes=[];this.rig={};this.bones={};this.quad=!!o.quad;
   this.obj.traverse(c=>{if(c.isMesh){c.material=toLite(c.material);patchMat(c.material);c.frustumCulled=false;this.mats.push(c.material);this.meshes.push(c)}});
-  if((o.rig||o.quad)&&!o.skinned){const out=[];for(const mesh of this.meshes){if(o.geoYaw)mesh.geometry=rotGeo(mesh.geometry,o.geoYaw);const r=autoRig(mesh,o.rigOpt,this.quad);out.push(r.sk);if(!this.skinned){this.skinned=r.sk;for(const k of r.keys)this.addRigBone(k,r.bones[k])}}this.meshes=out}
+  if((o.rig||o.quad)&&!o.skinned){const out=[];for(const mesh of this.meshes){if(o.geoYaw)mesh.geometry=rotGeo(mesh.geometry,o.geoYaw);const r=autoRig(mesh,o.rigOpt,this.quad);out.push(r.sk);if(r.wtip&&!this.wtip){this.wtip=new THREE.Vector3(...r.wtip);this.wbase=new THREE.Vector3(...r.wbase)}if(!this.skinned){this.skinned=r.sk;for(const k of r.keys)this.addRigBone(k,r.bones[k])}}this.meshes=out}
   else if(o.skinned){this.obj.traverse(c=>{if(c.isBone)this.bones[c.name.replace(/^mixamorig:?/,'')]=c});for(const [k,n] of Object.entries(MIXAMO_MAP))if(this.bones[n])this.addRigBone(k,this.bones[n]);this.meshes.forEach(m=>{if(m.isSkinnedMesh)this.skinned=m})}
   if(o.tint)this.tint(...o.tint);
   this.glow=null;if(o.glow){for(const mesh of this.meshes){const m=mesh.material;if(!m.map||!m.map.image)continue;const gl=glowFor(m.map,o.glow);if(gl.cover<0.0003)continue;
@@ -555,6 +592,12 @@ class Model3D{
  }
  addRigBone(key,bone){this.obj.updateMatrixWorld(true);const inv=this.obj.getWorldQuaternion(new THREE.Quaternion()).invert();const pq=bone.parent.getWorldQuaternion(new THREE.Quaternion());const rel=inv.multiply(pq).invert();
   this.rig[key]={bone,rest:bone.quaternion.clone(),ax:[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)].map(v=>v.applyQuaternion(rel))}}
+ reset(){this.flash=0;this.setCut(1e5);for(const m of this.mats){if(m.userData.uFlash)m.userData.uFlash.value.set(0,0,0);m.opacity=1}this.root.visible=true;this.root.position.set(0,0,0);this.root.rotation.set(0,0,0);this.root.scale.set(1,1,1);
+  this.pivot.position.set(0,0,0);this.pivot.rotation.set(0,0,0);this.pivot.scale.set(1,1,1);this.obj.scale.setScalar(this.baseScale);this.first=true;this.speed=0;this.yaw=0;this.curAct=null;if(this.mixer)this.mixer.stopAllAction();
+  this.obj.traverse(c=>{if(c.isSkinnedMesh)c.visible=true});if(this.blob&&!this.blob.parent)this.root.add(this.blob);for(const k in this.rig)this.setBone(k,null);
+  for(const c of [...this.root.children])if(c!==this.pivot&&c!==this.blob)this.root.remove(c)}
+ disposeGPU(){this.obj.traverse(c=>{if(c.isSkinnedMesh&&c.skeleton)c.skeleton.dispose()})}
+ blade(a,b){const r=this.rig.wpn;if(!r||!this.wtip)return false;r.bone.updateWorldMatrix(true,false);a.copy(this.wbase).applyMatrix4(r.bone.matrixWorld);b.copy(this.wtip).applyMatrix4(r.bone.matrixWorld);return true}
  tint(r,g,b){for(const m of this.mats)m.color&&m.color.setRGB(r,g,b)}
  hit(col='#ffffff',a=1){this.flash=a;this.flashCol.set(col)}
  setCut(y,edge){for(const m of this.mats){m.userData.uCut.value=y;if(edge!=null)m.userData.uEdge.value.set(edge)}}
@@ -612,7 +655,7 @@ function materialize(m,o={}){const dur=o.dur||1.6,col=o.col??0x3affd0,mat=holoMa
  addFx({dur,upd(f){const k=f.t/dur,hc=lerp(y0,y1,easeOut(Math.min(1,k/0.5))),rc=k<0.42?y0-0.05:lerp(y0,y1,eIO((k-0.42)/0.55));mat.uniforms.uCut.value=hc;mat.uniforms.uA.value=k<0.65?1:Math.max(0,1-(k-0.65)/0.35);m.setCut(rc);
    const p=m.root.getWorldPosition(_v);rays.position.set(p.x,hc,p.z);rays.children.forEach(r=>r.material.opacity=(k<0.6?0.7:0)*(0.5+0.5*Math.random()));
    const yy=k<0.5?hc:rc;for(let i=0;i<(o.sparks??4);i++){const a=rand(0,6.28);emit(p.x+Math.cos(a)*rad*rand(0.4,1),yy,p.z+Math.sin(a)*rad*rand(0.4,1),1,{col:[col,0xffffff],v0:0.1,v1:0.6,g:0.6,l0:0.3,l1:0.7,s0:0.05,s1:0.12})}},
-  end(){for(const h of holos)h.parent&&h.parent.remove(h);mat.dispose();fxRoot.remove(rays);disposeObj(rays);m.setCut(1e5);o.onDone&&o.onDone()}})}
+  end(){for(const h of holos)h.parent&&h.parent.remove(h);fxRoot.remove(rays);disposeObj(rays);m.setCut(1e5);o.onDone&&o.onDone()}})}
 function dissolve(m,o={}){const dur=o.dur||0.6,col=o.col??0xffa040,box=objBox(m.root),y0=box.min.y-0.05,y1=box.max.y+0.05,rad=Math.max(box.max.x-box.min.x,box.max.z-box.min.z)*0.4;m.setCut(y1,col);
  addFx({dur,upd(f){const k=f.t/dur,c=lerp(y1,y0,eIO(k));m.setCut(c);const p=m.root.getWorldPosition(_v);for(let i=0;i<3;i++){const a=rand(0,6.28);emit(p.x+Math.cos(a)*rad*rand(0.2,1),c,p.z+Math.sin(a)*rad*rand(0.2,1),1,{col:[col,0xffffff],dir:[0,1,0],v0:0.4,v1:1.6,g:0,l0:0.3,l1:0.7,s0:0.06,s1:0.16})}},end(){o.onDone&&o.onDone()}})}
 
@@ -671,7 +714,7 @@ function shatter(root,center,o={}){root.updateMatrixWorld(true);const pieces=[],
  root.parent&&root.parent.remove(root);const life=o.life||1.6;
  addFx({dur:life,upd(f,dt){const fade=f.t>life-0.5?(life-f.t)/0.5:1;for(const p of pieces){p.v.y-=(o.g??16)*dt;p.m.position.addScaledVector(p.v,dt);if(p.m.position.y<0.06){p.m.position.y=0.06;p.v.y*=-0.35;p.v.x*=0.6;p.v.z*=0.6;p.w*=0.6}
    p.m.quaternion.premultiply(_q.setFromAxisAngle(p.ax,p.w*dt));if(o.shrink)p.m.scale.multiplyScalar(1-dt*0.6)}for(const m of mats.values())m.opacity=fade},
-  end(){for(const p of pieces){fxRoot.remove(p.m);p.m.geometry.dispose()}for(const m of mats.values())m.dispose()}});return pieces}
+  end(){for(const p of pieces){fxRoot.remove(p.m);p.m.geometry.dispose()}}});return pieces}
 function lavaCrater(x,z,r=1.8,dur=3){if(!LAVA)LAVA=lavaTextures();const m=new THREE.Mesh(new THREE.CircleGeometry(r,32).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:LAVA.em,color:0xffa060,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));m.position.set(x,0.04,z);
  addFx({obj:m,dur,upd(f){m.material.opacity=1-f.t/f.dur;if(Math.random()<0.3)emit(x+rand(-r,r)*0.6,0.1,z+rand(-r,r)*0.6,1,{col:[0xff6a1a,0xffc040],dir:[0,1,0],v0:0.5,v1:1.5,g:0,l0:0.4,l1:0.8})}})}
 
@@ -680,7 +723,7 @@ const arena=new THREE.Group();scene.add(arena);
 const hubRoot=new THREE.Group();scene.add(hubRoot);
 let bgMesh=null,groundMesh=null,B={x0:-12,x1:12,z0:-3.3,z1:3.3};
 function buildArena(c){
-  arena.clear();const ch=CHAPTERS[c];
+  for(const o of [...arena.children]){arena.remove(o);if(!o.userData.model)disposeObj(o)}const ch=CHAPTERS[c];
   const bt=TX[ch.bg],aw=bt.image.width/bt.image.height,bw=100,bh=bw/aw;
   bgMesh=new THREE.Mesh(new THREE.PlaneGeometry(bw,bh),new THREE.MeshBasicMaterial({map:bt,fog:false,depthWrite:false}));bgMesh.position.set(0,-1.5+bh*(0.5-0.3),-36);arena.add(bgMesh);
   const gt=TX[ch.gr];gt.wrapS=gt.wrapT=THREE.RepeatWrapping;gt.repeat.set(26,14);gt.anisotropy=8;
@@ -708,20 +751,27 @@ const GLB={};
 let hero=null,ally=null;
 function mkModel(key,extra={}){const src=GLB_SRC[key]||key,d={...MODEL_DEF[src],...extra},g=GLB[key];const hh=extra.h||MODEL_DEF[key].h||d.h||1.6,bh=g.userData.h||1;
   return new Model3D(g,{...d,scale:hh/bh,rig:d.skinned||(g.animations&&g.animations.length)?null:'auto',shadow:extra.shadow??hh*0.5})}
-function heroModelFor(tier){let k='hero_t'+tier;if(!GLB[k])k=Object.keys(GLB).find(x=>x.startsWith('hero_t'));return mkModel(k,{shadow:0.9,h:MODEL_DEF['hero_t'+tier].h})}
+/* model pool: reuse built characters instead of rebuilding (no spawn hitches, no GPU leaks) */
+const MPOOL=new Map();
+function poolKey(key,ex){return key+'|'+(ex.h||'')+'|'+JSON.stringify(ex.tint||0)+'|'+JSON.stringify(ex.glow||0)}
+function getModel(key,ex={},owner=null){const k=poolKey(key,ex),a=MPOOL.get(k);let m;if(a&&a.length){m=a.pop();m.reset()}else{m=mkModel(key,ex);m.poolK=k}m.inPool=false;m.owner=owner;return m}
+function releaseModel(m,owner){if(!m||m.inPool||(owner&&m.owner&&m.owner!==owner))return;m.root.parent&&m.root.parent.remove(m.root);m.owner=null;if(!m.poolK){m.disposeGPU&&m.disposeGPU();return}
+ let a=MPOOL.get(m.poolK);if(!a)MPOOL.set(m.poolK,a=[]);if(a.length>=10){m.disposeGPU();return}m.inPool=true;a.push(m)}
+function heroModelFor(tier){let k='hero_t'+tier;if(!GLB[k])k=Object.keys(GLB).find(x=>x.startsWith('hero_t'));return getModel(k,{shadow:0.9,h:MODEL_DEF['hero_t'+tier].h})}
 function buildHero(){
-  if(hero){hero.m.root.parent&&hero.m.root.parent.remove(hero.m.root);hero.adorn.parent&&hero.adorn.parent.remove(hero.adorn)}
+  if(hero){releaseModel(hero.m);hero.adorn.parent&&hero.adorn.parent.remove(hero.adorn)}
   const tier=save.realm,st=heroStats();
   const m=heroModelFor(tier);
   hero={m,pos:new THREE.Vector3(0,0,0),fx:1,fz:0,state:'idle',st:0,dur:0,idx:0,comboWin:0,hp:st.hp,maxHp:st.hp,stats:st,cd:[0,0,0,0,0,0],dashCd:0,inv:0,dead:false,frozen:0,pend:null,adorn:new THREE.Group(),swords:[],hpShow:1};
   buildAdorn(tier);
 }
+const SOUL={};
 function buildAdorn(tier){
   const A=hero.adorn;A.clear();const R=REALMS[tier];hero.swords=[];hero.halo=null;hero.wings=null;hero.soul=null;
   if(R.aura){const ring=decal(0,0,2.2,R.aura,0.55);ring.position.y=0.035;A.add(ring);hero.auraRing=ring}else hero.auraRing=null;
   const nS=[0,0,1,3,4,5,7][tier];const scol=[0,0,0x7affc8,0xff4a6a,0xffb030,0xb07aff,0xfff0b0][tier];
   for(let i=0;i<nS;i++){const s=makeSword(scol,0.75);s.scale.setScalar(0.9);A.add(s);hero.swords.push(s)}
-  if(tier>=4){const soul=mkModel('hero_t'+tier,{h:0.55,shadow:0});soul.root.remove(soul.blob);soul.glow=null;for(const m of soul.mats){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(tier>=5?0xb07aff:0xffc040);m.emissiveMap=null;m.userData.uGlow.value=0;m.emissiveIntensity=1.4;m.depthWrite=false;m.needsUpdate=true}A.add(soul.root);hero.soul=soul}
+  if(tier>=4){const soul=SOUL[tier]||(SOUL[tier]=mkModel('hero_t'+tier,{h:0.55,shadow:0}));soul.reset();soul.root.remove(soul.blob);soul.glow=null;for(const m of soul.mats){m.transparent=true;m.opacity=0.55;m.emissive=new THREE.Color(tier>=5?0xb07aff:0xffc040);m.emissiveMap=null;m.userData.uGlow.value=0;m.emissiveIntensity=1.4;m.depthWrite=false;m.needsUpdate=true}A.add(soul.root);hero.soul=soul}
   if(tier>=5){const h=new THREE.Mesh(QUAD,addMat(tier>=6?0xfff0c0:0xd0a8ff,0.9,TEX.halo));h.scale.set(1.5,1.5,1);A.add(h);hero.halo=h}
   if(tier>=6){const w=new THREE.Group();for(const sd of[-1,1])for(let i=0;i<6;i++){const f=new THREE.Mesh(QUAD,addMat(0xfff4d0,0.7,TEX.feather));f.scale.set(0.35,1.6-i*0.12,1);f.userData={sd,i};w.add(f)}A.add(w);hero.wings=w}
   if(tier>=3){const sh=[];for(const mesh of hero.m.meshes){const mat=new THREE.MeshBasicMaterial({color:R.aura,transparent:true,opacity:0.28,blending:THREE.AdditiveBlending,side:THREE.BackSide,depthWrite:false});
@@ -737,15 +787,15 @@ function updAdorn(dt,inHub){
   if(hero.wings){hero.wings.position.set(0,hh*0.62,-0.2);hero.wings.quaternion.copy(camQ);hero.wings.children.forEach(f=>{const {sd,i}=f.userData,fl=Math.sin(t*3)*0.15;f.position.set(sd*(0.35+i*0.11),0.35+i*0.04,0);f.rotation.z=-sd*(0.5+i*0.22+fl)})}
   if(tier>=1&&Math.random()<dt*(6+tier*4))emit(p.x+rand(-0.5,0.5),rand(0.1,0.3),p.z+rand(-0.4,0.4),1,{col:REALMS[tier].aura,dir:[0,1,0],v0:0.6,v1:1.6,g:0,l0:0.6,l1:1.2,s0:0.08,s1:0.18})
 }
-function buildAlly(){if(ally){ally.m.root.parent&&ally.m.root.parent.remove(ally.m.root)}ally=null;if(save.realm<2||!GLB.girl)return;
-  ally={m:mkModel('girl',{shadow:0.8}),pos:new THREE.Vector3(),fx:1,fz:0,state:'idle',st:0,dur:0,cd:[1.2,5,9]}}
+function buildAlly(){if(ally){releaseModel(ally.m)}ally=null;if(save.realm<2||!GLB.girl)return;
+  ally={m:getModel('girl',{shadow:0.8}),pos:new THREE.Vector3(),fx:1,fz:0,state:'idle',st:0,dur:0,cd:[1.2,5,9]}}
 
 /* ---------------- ENEMIES ---------------- */
 let enemies=[],eProj=[],hProj=[];
 class Mob{
  constructor(type,lv,x,z,elite=false){const d=MOBS[type];this.d=d;this.type=type;this.lv=lv;this.elite=elite;
   const md=MODEL_DEF[GLB_SRC[d.model]||d.model]||{};this.quad=!!md.quad;this.h=(md.h||1.6)*(elite?1.4:1);
-  const fb=GLB_SRC[d.model]&&d.fb||{};this.m=mkModel(d.model,{h:this.h,tint:fb.tint||d.tint||md.tint,glow:fb.glow||d.glow||md.glow,shadow:this.h*(this.quad?0.7:0.5)});arena.add(this.m.root);this.m.root.position.set(x,0,z);
+  const fb=GLB_SRC[d.model]&&d.fb||{};this.m=getModel(d.model,{h:this.h,tint:fb.tint||d.tint||md.tint,glow:fb.glow||d.glow||md.glow,shadow:this.h*(this.quad?0.7:0.5)},this);arena.add(this.m.root);this.m.root.position.set(x,0,z);
   const hm=elite?4:1;this.maxHp=this.hp=mobHp(lv)*d.hp*hm;this.atk=mobAtk(lv)*d.atk*(elite?1.5:1);this.def=Math.round(2*Math.pow(1.2,lv));
   this.pos=new THREE.Vector3(x,0,z);this.vel=new THREE.Vector3();this.state='spawn';this.st=0;this.cd=rand(0.5,1.2);this.alive=true;this.radius=this.h*(this.quad?0.34:0.27);this.hpShow=1;this.stun=0;this.slow=0;this.t=rand(0,9);this.float=md.float||0;
   const f=x>hero.pos.x?-1:1;this.m.yaw=Math.atan2(f,0.6);this.m.root.rotation.y=this.m.yaw;
@@ -757,7 +807,7 @@ class Mob{
  die(){this.alive=false;this.state='dead';this.st=0;reward(this.lv*(this.elite?1.05:1),this.elite?5:1,this.pos);stageKills++;
   if(this.ice){shatter(this.ice,this.pos.clone().setY(0.5),{v0:3,v1:7,life:1.2});this.ice=null}
   emit(this.pos.x,this.h*0.5,this.pos.z,this.elite?40:16,{col:[this.d.col,0xffffff,0xffd36a],v0:1,v1:5,up:2,g:-6,l0:0.3,l1:0.8,s0:0.12,s1:0.32});
-  dissolve(this.m,{dur:0.7,col:this.d.col,onDone:()=>{arena.remove(this.m.root);this.gone=true}})}
+  dissolve(this.m,{dur:0.7,col:this.d.col,onDone:()=>{releaseModel(this.m,this);this.gone=true}})}
  freeze(dur){if(this.ice||!this.alive)return;const ic=makeIce({n:8,scale:this.h*0.62,inward:true});ic.position.copy(this.pos);fxRoot.add(ic);this.ice=ic;this.iceT=dur;this.stun=Math.max(this.stun,dur);sfx('ice',0.05)}
  update(dt){this.t+=dt;this.st+=dt;const p=this.pos;
   if(this.state==='dead'){this.m.pose(dt,'die',Math.min(1,this.st/0.6),{float:this.float});return}
@@ -787,7 +837,7 @@ class Mob{
 function shootE(o,dir,dmg,col){const s=glowSprite(col,0.7);s.position.copy(o);fxRoot.add(s);const core=glowSprite(0xffffff,0.3);s.add(core);eProj.push({s,dir:dir.clone(),dmg,t:0,col})}
 function updEProj(dt){for(let i=eProj.length-1;i>=0;i--){const q=eProj[i];q.t+=dt;q.s.position.addScaledVector(q.dir,7.5*dt);if(hero.dead||mode!=='battle')q.t=99;if(Math.random()<0.6)emit(q.s.position.x,q.s.position.y,q.s.position.z,1,{col:q.col,v0:0,v1:0.4,g:0,l0:0.2,l1:0.35,s0:0.1,s1:0.2});
   const hp=hero.pos;if(!hero.dead&&Math.hypot(q.s.position.x-hp.x,q.s.position.z-hp.z)<0.55){hurtHero(q.dmg);q.t=99}
-  if(q.t>2.5){fxRoot.remove(q.s);q.s.material.dispose();eProj.splice(i,1)}}}
+  if(q.t>2.5){fxRoot.remove(q.s);eProj.splice(i,1)}}}
 
 /* ---------------- BOSS ---------------- */
 let boss=null;
@@ -795,7 +845,7 @@ class Boss{
  constructor(key,lv,x,z){const d=BOSSES[key];this.d=d;this.key=key;this.isBoss=true;this.lv=lv;this.alive=true;
   this.maxHp=this.hp=mobHp(lv)*d.hpMul;this.atk=mobAtk(lv)*d.atkMul;this.def=Math.round(3*Math.pow(1.2,lv));this.pos=new THREE.Vector3(x,0,z);this.vel=new THREE.Vector3();this.face=-1;
   this.state='intro';this.st=0;this.cd=2.5;this.phase=1;this.hpLag=this.maxHp;this.stun=0;this.slow=0;this.flash=0;this.t=0;this.k=0;this.anim='idle';
-  if(GLB[d.model]){const md=MODEL_DEF[GLB_SRC[d.model]||d.model];this.quad=!!md.quad;const fb=GLB_SRC[d.model]&&d.fb||{};this.m=mkModel(d.model,{h:d.h,tint:fb.tint||d.tint||md.tint,glow:fb.glow||d.glow||md.glow,shadow:d.h*0.55});arena.add(this.m.root);this.m.root.position.set(x,0,z);this.radius=d.h*(this.quad?0.36:0.3);
+  if(GLB[d.model]){const md=MODEL_DEF[GLB_SRC[d.model]||d.model];this.quad=!!md.quad;const fb=GLB_SRC[d.model]&&d.fb||{};this.m=getModel(d.model,{h:d.h,tint:fb.tint||d.tint||md.tint,glow:fb.glow||d.glow||md.glow,shadow:d.h*0.55},this);arena.add(this.m.root);this.m.root.position.set(x,0,z);this.radius=d.h*(this.quad?0.36:0.3);
    this.m.yaw=-Math.PI/2+0.6;this.m.root.rotation.y=this.m.yaw;materialize(this.m,{dur:1.7,col:d.col,sparks:6})}
   else{const tex=TX[d.img];this.h=d.h;this.w=d.h*tex.image.width/tex.image.height;this.mat=new THREE.MeshBasicMaterial({map:tex,alphaTest:0.4,side:THREE.DoubleSide});this.mesh=new THREE.Mesh(QUADB,this.mat);arena.add(this.mesh);
    this.blob=new THREE.Mesh(FLAT,new THREE.MeshBasicMaterial({map:TEX.blob,transparent:true,depthWrite:false}));this.blob.scale.set(this.w*0.8,1,this.w*0.4);arena.add(this.blob);this.radius=this.w*0.3}
@@ -811,7 +861,7 @@ class Boss{
  update(dt){this.t+=dt;this.st+=dt;const p=this.pos,d=this.d;const tp=hero.pos,dx=tp.x-p.x,dz=tp.z-p.z,dist=Math.hypot(dx,dz);
   this.hpLag=this.hpLag>this.hp?Math.max(this.hp,this.hpLag-this.maxHp*0.25*dt):this.hp;
   if(this.state==='dead'){if(this.m){this.m.pose(dt,'die',this.st/1.5,{float:d.float});if(!this.dis&&this.st>0.5){this.dis=1;dissolve(this.m,{dur:1.2,col:d.col})}}else{this.mat.transparent=true;this.mat.opacity=Math.max(0,1-this.st/1.2);this.mesh.position.y+=dt}
-   if(this.st>1.7&&!this.gone){this.gone=true;if(this.m)arena.remove(this.m.root);else{arena.remove(this.mesh);arena.remove(this.blob)}}return}
+   if(this.st>1.7&&!this.gone){this.gone=true;if(this.m)releaseModel(this.m,this);else{arena.remove(this.mesh);arena.remove(this.blob)}}return}
   this.stun-=dt;this.slow-=dt;const sm=this.slow>0?0.6:1,pm=this.phase>1?1.3:1;
   if(this.state==='intro'){if(this.st>1.6){this.state='idle';this.st=0}}
   else if(this.state==='idle'&&this.stun<=0&&!hero.dead){if(Math.abs(dx)>0.3)this.face=dx>0?1:-1;const want=d.float?5:2.8;
@@ -960,9 +1010,22 @@ function skPagoda(){setHeroAnim('cast',0.8);sfx('magic');showBanner('镇魔塔',
 function timeScale(){return save.spd||1}
 
 /* hero basic */
+/* sword trail: a ribbon swept by the real blade (base->tip) while swinging */
+class SwordTrail{constructor(n=14){this.n=n;this.a=[];this.b=[];this.age=[];const g=new THREE.BufferGeometry();this.pos=new Float32Array(n*2*3);this.col=new Float32Array(n*2*4);
+  g.setAttribute('position',new THREE.BufferAttribute(this.pos,3));g.setAttribute('color',new THREE.BufferAttribute(this.col,4));const ix=[];for(let i=0;i<n-1;i++){const k=i*2;ix.push(k,k+1,k+2,k+1,k+3,k+2)}g.setIndex(ix);
+  this.mat=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+  this.mesh=new THREE.Mesh(g,this.mat);this.mesh.frustumCulled=false;this.c=new THREE.Color(1,1,1);this.A=new THREE.Vector3();this.B=new THREE.Vector3()}
+ update(m,dt,active,col){if(col!=null)this.c.set(col);for(let i=0;i<this.age.length;i++)this.age[i]+=dt;
+  if(active&&m.blade(this.A,this.B)){this.a.unshift(this.A.clone());this.b.unshift(this.B.clone());this.age.unshift(0)}
+  while(this.age.length&&(this.age.length>this.n||this.age[this.age.length-1]>0.2)){this.a.pop();this.b.pop();this.age.pop()}
+  const L=this.age.length;this.mesh.visible=L>1;if(L<2)return;
+  for(let i=0;i<this.n;i++){const j=Math.min(i,L-1),A=this.a[j],B=this.b[j],f=Math.min(1,1.25*Math.max(0,1-this.age[j]/0.2)*(1-i/(this.n-1)));
+   this.pos.set([A.x,A.y,A.z,B.x,B.y,B.z],i*6);this.col.set([this.c.r,this.c.g,this.c.b,f*0.15,this.c.r,this.c.g,this.c.b,f*0.85],i*8)}
+  this.mesh.geometry.attributes.position.needsUpdate=true;this.mesh.geometry.attributes.color.needsUpdate=true}}
+let heroTrail=null;
 function setHeroAnim(s,d,idx=0){hero.state=s;hero.st=0;hero.dur=d;hero.idx=idx}
 function doAttack(){const h=hero,t=nearestEnemy(4.5);if(t){const dx=t.pos.x-h.pos.x,dz=t.pos.z-h.pos.z,l=Math.hypot(dx,dz)||1;h.fx=dx/l;h.fz=dz/l}
-  h.idx=h.comboWin>0?(h.idx+1)%3:0;const d=h.idx===2?0.46:0.34;setHeroAnim('attack',d,h.idx);h.comboWin=d+0.3;h.pend={t:d*0.42,idx:h.idx};sfx('slash',0.06)}
+  h.idx=h.comboWin>0?(h.idx+1)%3:0;const d=h.idx===2?0.46:0.34;setHeroAnim('attack',d,h.idx);h.comboWin=d+0.3;h.pend={t:d*(h.idx===2?0.5:0.43),idx:h.idx};sfx('slash',0.06)}
 function meleeHit(idx){const h=hero,R=1.9+save.realm*0.07+(idx===2?0.4:0),ang=Math.atan2(h.fz,h.fx);const col=save.realm===0?0xd8d0c0:REALMS[save.realm].aura;
   slashFx(h.pos.x+h.fx*0.9,0.95,h.pos.z+h.fz*0.9,ang,col,idx===2?3.6:2.8,idx===1,idx===2?0.05:0.35);
   let any=false;for(const e of enemies){if(!e.alive||e.state==='spawn')continue;const dx=e.pos.x-h.pos.x,dz=e.pos.z-h.pos.z,d=Math.hypot(dx,dz);if(d>R+e.radius)continue;if(d>0.8&&(dx*h.fx+dz*h.fz)/d<(idx===2?-1:0.3))continue;
@@ -1008,11 +1071,11 @@ function stageModels(c,s){const ch=CHAPTERS[c],k=['hero_t'+save.realm,...ch.mobs
 const WARM=new Set();
 function warmup(keys){const todo=keys.filter(k=>GLB[k]&&!WARM.has(k));if(!todo.length)return Promise.resolve();
  const g=new THREE.Group();g.position.set(camera.position.x,0,camera.position.z-6);
- for(const k of todo){WARM.add(k);try{const m=mkModel(k,MOBS[Object.keys(MOBS).find(x=>MOBS[x].model===k)]||{});g.add(m.root);const hm=holoMaterial(0x3affd0);holoOverlay(m.meshes.filter(x=>x.isSkinnedMesh||x.isMesh),hm).forEach(h=>g.add(h))}catch(e){}}
- scene.add(g);const rt=useBloom&&composer?composer.renderTarget1:null;try{renderer.setRenderTarget(rt);renderer.compile(scene,camera)}catch(e){}renderer.setRenderTarget(null);scene.remove(g);return new Promise(r=>setTimeout(r,30))}
+ const made=[];for(const k of todo){WARM.add(k);try{const md=MODEL_DEF[GLB_SRC[k]||k]||{},mob=MOBS[Object.keys(MOBS).find(x=>MOBS[x].model===k)],bos=BOSSES[Object.keys(BOSSES).find(x=>BOSSES[x].model===k)];let ex={};if(mob){const h=md.h||1.6,fb=GLB_SRC[k]&&mob.fb||{};ex={h,tint:fb.tint||mob.tint||md.tint,glow:fb.glow||mob.glow||md.glow,shadow:h*(md.quad?0.7:0.5)}}else if(bos){const fb=GLB_SRC[k]&&bos.fb||{};ex={h:bos.h,tint:fb.tint||bos.tint||md.tint,glow:fb.glow||bos.glow||md.glow,shadow:bos.h*0.55}}const m=getModel(k,ex);made.push(m);g.add(m.root);const hm=holoMaterial(0x3affd0);holoOverlay(m.meshes.filter(x=>x.isSkinnedMesh||x.isMesh),hm).forEach(h=>g.add(h))}catch(e){}}
+ scene.add(g);const rt=useBloom&&composer?composer.renderTarget1:null;try{renderer.setRenderTarget(rt);renderer.compile(scene,camera)}catch(e){}renderer.setRenderTarget(null);scene.remove(g);const hs=[];g.traverse(c=>{if(c.material&&c.material.isShaderMaterial)hs.push(c)});for(const c of hs)c.parent&&c.parent.remove(c);for(const m of made)releaseModel(m);return new Promise(r=>setTimeout(r,30))}
 function startStage(c,s){closeModal();const keys=stageModels(c,s);const go=()=>warmup(keys).then(()=>startStageNow(c,s));if(keys.every(k=>GLB[k])&&keys.every(k=>WARM.has(k))){startStageNow(c,s);return}toast('加载模型中… Loading models');Promise.all(keys.map(loadModel)).then(go)}
 function startStageNow(c,s){closeModal();clearFx();stageC=c;stageS=s;stageLv=mobLv(c,s);const isBoss=s===STAGES_PER-1;waves=isBoss?2:3;wave=0;spawnQ=0;stageExp=0;stageStones=0;stageKills=0;stageDmg=0;stageT=0;combo=0;maxCombo=0;
-  for(const e of enemies){if(e.mesh){arena.remove(e.mesh);arena.remove(e.blob)}if(e.m)arena.remove(e.m.root)}enemies=[];boss=null;for(const q of eProj)fxRoot.remove(q.s);eProj=[];
+  for(const e of enemies){if(e.mesh){arena.remove(e.mesh);arena.remove(e.blob)}if(e.m)releaseModel(e.m,e)}if(boss&&boss.m)releaseModel(boss.m,boss);enemies=[];boss=null;for(const q of eProj)fxRoot.remove(q.s);eProj=[];
   for(const t of teles){fxRoot.remove(t.g)}teles.length=0;for(const f of fxs){if(f.obj)fxRoot.remove(f.obj)}fxs.length=0;parts.length=0;orbs.length=0;texts=[];
   buildArena(c);B=isBoss?{x0:-9,x1:9,z0:-3.3,z1:3.3}:{x0:-13,x1:13,z0:-3.3,z1:3.3};
   buildHero();arena.add(hero.m.root);arena.add(hero.adorn);hero.pos.set(B.x0+3,0,0);hero.m.yaw=Math.PI/2;
@@ -1061,6 +1124,7 @@ function updateBattle(dt){
   }
   h.m.root.position.copy(h.pos);h.m.face(Math.atan2(h.fx,h.fz+0.9*Math.abs(h.fx)),dt,14);
   h.m.pose(h.frozen>0?dt*0.05:dt,h.frozen>0?'frozen':h.state,h.dur?h.st/h.dur:0,{idx:h.idx});updAdorn(dt);
+   if(!heroTrail){heroTrail=new SwordTrail()}if(heroTrail.mesh.parent!==fxRoot)fxRoot.add(heroTrail.mesh);{const k=h.dur?h.st/h.dur:0;heroTrail.update(h.m,dt,h.state==='attack'&&k>0.28&&k<0.7,save.realm===0?0xfff2d8:REALMS[save.realm].aura||0xffffff)}
   if(ally)updAlly(dt);
   for(const e of enemies)e.update(dt);enemies=enemies.filter(e=>!e.gone);
   updEProj(dt);updTeles(dt);updOrbs(dt);
@@ -1094,7 +1158,7 @@ function shootH(o,dir,mult){const s=glowSprite(0xbff4ff,0.45);s.position.copy(o)
 function updHProj(dt){for(let i=hProj.length-1;i>=0;i--){const q=hProj[i];q.t+=dt;q.s.position.addScaledVector(q.dir,14*dt);const p=q.s.position;if(Math.random()<0.5)emit(p.x,p.y,p.z,1,{col:0xbff4ff,v0:0,v1:0.2,g:0,l0:0.15,l1:0.25,s0:0.1,s1:0.18});
   let hitE=null;for(const e of enemies){if(e.alive&&Math.hypot(e.pos.x-p.x,e.pos.z-p.z)<e.radius+0.3){hitE=e;break}}
   if(hitE){const {d,crit}=dmgCalc(q.mult,hitE.def);hitE.takeHit(d,{slow:2});addText(new THREE.Vector3(p.x,p.y+0.4,p.z),fmt(d),{size:16,c1:'#fff',c2:'#9fe8ff'});q.t=99}
-  if(q.t>1.2){fxRoot.remove(q.s);q.s.material.dispose();hProj.splice(i,1)}}}
+  if(q.t>1.2){fxRoot.remove(q.s);hProj.splice(i,1)}}}
 
 /* ---------------- HUD (2D overlay) ---------------- */
 const _p=new THREE.Vector3();
@@ -1149,7 +1213,7 @@ function openModal(html){$('mbox').innerHTML=html;$('modal').classList.add('show
 function closeModal(){$('modal').classList.remove('show');clearTimeout(loopTimer)}
 function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,1600)}
 function goHub(retry){const ks=['hero_t'+save.realm,'girl'];if(!retry&&!ks.every(k=>GLB[k])){toast('加载模型中…');Promise.all(ks.map(loadModel)).then(()=>goHub(true));return}if(!Object.keys(GLB).some(k=>k.startsWith('hero_t'))){showErr('Hero model failed to load — check internet and reload');return}closeModal();mode='hub';$('touch').style.display='none';showScreen('hubUI');buildHub();
-  for(const e of enemies){if(e.mesh)arena.remove(e.mesh);if(e.m)arena.remove(e.m.root)}enemies=[];boss=null;
+  clearFx();for(const e of enemies){if(e.mesh)arena.remove(e.mesh);if(e.m)releaseModel(e.m,e)}if(boss&&boss.m)releaseModel(boss.m,boss);enemies=[];boss=null;
   buildHero();hubRoot.add(hero.m.root);hubRoot.add(hero.adorn);hero.pos.set(0,0,0);hero.m.yaw=0.5;
   buildAlly();if(ally){hubRoot.add(ally.m.root);ally.pos.set(-1.6,0,-0.6)}
   camera.position.set(0,1.9,6.8);camera.lookAt(0,1.05,0);refreshHub()}
@@ -1198,7 +1262,7 @@ function tribulation(){mode='trib';$('hubBtns').style.visibility='hidden';const 
     <div class="mrow"><button class="btn gold" id="tOk">逆天而行！</button></div>`);$('tOk').onclick=closeModal},4700)}
 
 /* ---------------- MAIN LOOP ---------------- */
-function frame(now){requestAnimationFrame(frame);try{frameBody(now)}catch(e){if(!frame.err){frame.err=1;showErr('Error: '+e.message);console.error(e)}}}
+function frame(now){requestAnimationFrame(frame);if(isTouch&&QUAL<=1&&!document.hidden){if(now-(frame.lr||0)<31)return;frame.lr=now}const _t0=performance.now();try{frameBody(now);if(window.__fb)window.__fb.push(performance.now()-_t0)}catch(e){if(!frame.err){frame.err=1;showErr('Error: '+e.message);console.error(e)}}}
 function frameBody(now){let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;U_TIME.value=now/1000;
   if(!document.hidden&&mode!=='load'){fpsAcc+=dt;fpsN++;if(fpsAcc>1.5){const fps=fpsN/fpsAcc;if(fps<27&&QUAL>0){lowFps++;if(lowFps>=2){setQuality(QUAL-1);lowFps=0}}else lowFps=0;fpsAcc=0;fpsN=0}}
   shakeV=Math.max(0,shakeV-dt*2.2);flashV=Math.max(0,flashV-dt*2);hurtV=Math.max(0,hurtV-dt*1.6);darkT-=dt;darkA=lerp(darkA,darkT>0?1:0,1-Math.pow(0.002,dt));
