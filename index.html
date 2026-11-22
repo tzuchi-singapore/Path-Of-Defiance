@@ -221,7 +221,7 @@ const MODEL_DEF={
 };
 const BLOB_URL={};/* filled for the claude.ai artifact build */
 
-const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id);const modalEl=document.getElementById('modal');
 function showErr(m){try{const b=$('errBox');b.style.display='block';b.textContent=String(m).slice(0,240)}catch(_){}}
 addEventListener('error',e=>showErr('Error: '+(e.message||e)));addEventListener('unhandledrejection',e=>showErr('Error: '+(e.reason&&e.reason.message||e.reason)));
 const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,k)=>a+(b-a)*k,pick=a=>a[Math.random()*a.length|0];
@@ -302,17 +302,19 @@ function sfx(n,gap=0.04){if(!AC)return;const t=performance.now()/1000;if(sLast[n
 
 /* ---------------- RENDERER ---------------- */
 const glc=$('gl'),hud=$('hud'),hg=hud.getContext('2d');
-let VW=innerWidth,VH=innerHeight;const DPR=Math.min(devicePixelRatio||1,isTouch?1.3:1.75);
-const renderer=new THREE.WebGLRenderer({canvas:glc,antialias:true,powerPreference:'high-performance'});
+let VW=innerWidth,VH=innerHeight;const DPR_MAX=Math.min(devicePixelRatio||1,isTouch?1.5:1.75);let QUAL=(()=>{try{const q=localStorage.getItem('xn_qual');if(q!=null)return +q}catch(e){}return isTouch?1:2})();
+const QDPR=[0.75,1,1.25,DPR_MAX];let DPR=Math.min(DPR_MAX,QDPR[QUAL]);
+const renderer=new THREE.WebGLRenderer({canvas:glc,antialias:!isTouch,powerPreference:'high-performance'});
 renderer.setPixelRatio(DPR);renderer.setSize(VW,VH);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(46,VW/VH,0.1,400);
 const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
 const hemi=new THREE.HemisphereLight(0xffffff,0x4a5060,0.9);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff2dd,2.0);sun.position.set(4,10,7);scene.add(sun);
-let composer=null,bloom=null,useBloom=true;
-try{composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));bloom=new UnrealBloomPass(new THREE.Vector2(VW/2,VH/2),0.6,0.4,0.8);composer.addPass(bloom);composer.addPass(new OutputPass())}catch(e){useBloom=false}
-function resize(){VW=innerWidth;VH=innerHeight;renderer.setSize(VW,VH);camera.aspect=VW/VH;camera.updateProjectionMatrix();if(composer){composer.setSize(VW,VH);bloom.resolution.set(VW/2,VH/2)}
+let composer=null,bloom=null,useBloom=QUAL>=1;
+try{composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));bloom=new UnrealBloomPass(new THREE.Vector2(VW/(isTouch?4:2),VH/(isTouch?4:2)),0.6,0.4,0.8);composer.addPass(bloom);composer.addPass(new OutputPass())}catch(e){useBloom=false}
+function setQuality(q,manual){QUAL=Math.max(0,Math.min(3,q));DPR=Math.min(DPR_MAX,QDPR[QUAL]);useBloom=QUAL>=1&&!!composer;try{localStorage.setItem('xn_qual',QUAL)}catch(e){}resize();if(manual)toast('画质 Quality: '+['低 Low','中 Medium','高 High','极致 Ultra'][QUAL])}
+function resize(){VW=innerWidth;VH=innerHeight;renderer.setPixelRatio(DPR);renderer.setSize(VW,VH);camera.aspect=VW/VH;camera.updateProjectionMatrix();if(composer){composer.setPixelRatio(DPR);composer.setSize(VW,VH);bloom.resolution.set(VW/(isTouch?4:2),VH/(isTouch?4:2))}
   hud.width=VW*DPR;hud.height=VH*DPR;hud.style.width=VW+'px';hud.style.height=VH+'px';pMat.uniforms.scale.value=VH*DPR*0.5;
   $('rotate').style.display=VH>VW*1.05?'flex':'none';layoutSkills();if(hubBgTex)fitCover(hubBgTex)}
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));
@@ -996,7 +998,13 @@ function addExp(n,quiet){if(save.layer>=LAYERS-1){const need=expNeed(lvIdx());sa
 const breakReady=()=>save.layer>=LAYERS-1&&save.exp>=expNeed(lvIdx())&&save.realm<REALMS.length-1;
 function clearFx(){for(const f of fxs)f.end&&!f.noEndOnClear&&0;fxs.length=0;fxRoot.clear();teles.length=0;parts.length=0}
 function stageModels(c,s){const ch=CHAPTERS[c],k=['hero_t'+save.realm,...ch.mobs.map(m=>MOBS[m].model)];if(s===STAGES_PER-1){const b=BOSSES[ch.boss];k.push(b.model,MOBS[b.summon].model)}if(save.realm>=2)k.push('girl');return[...new Set(k)]}
-function startStage(c,s){closeModal();const keys=stageModels(c,s);if(keys.every(k=>GLB[k])){startStageNow(c,s);return}toast('加载模型中… Loading models');Promise.all(keys.map(loadModel)).then(()=>startStageNow(c,s))}
+/* pre-compile shaders off-screen so the first spawn / skill doesn't freeze the phone */
+const WARM=new Set();
+function warmup(keys){const todo=keys.filter(k=>GLB[k]&&!WARM.has(k));if(!todo.length||!renderer.compileAsync)return Promise.resolve();
+ const g=new THREE.Group();g.position.set(camera.position.x,0,camera.position.z-6);
+ for(const k of todo){WARM.add(k);try{const m=mkModel(k,MOBS[Object.keys(MOBS).find(x=>MOBS[x].model===k)]||{});g.add(m.root);const hm=holoMaterial(0x3affd0);holoOverlay(m.meshes.filter(x=>x.isSkinnedMesh||x.isMesh),hm).forEach(h=>g.add(h))}catch(e){}}
+ scene.add(g);return Promise.race([renderer.compileAsync(scene,camera),new Promise(r=>setTimeout(r,4000))]).catch(()=>{}).then(()=>{scene.remove(g)})}
+function startStage(c,s){closeModal();const keys=stageModels(c,s);const go=()=>warmup(keys).then(()=>startStageNow(c,s));if(keys.every(k=>GLB[k])&&keys.every(k=>WARM.has(k))){startStageNow(c,s);return}toast('加载模型中… Loading models');Promise.all(keys.map(loadModel)).then(go)}
 function startStageNow(c,s){closeModal();clearFx();stageC=c;stageS=s;stageLv=mobLv(c,s);const isBoss=s===STAGES_PER-1;waves=isBoss?2:3;wave=0;spawnQ=0;stageExp=0;stageStones=0;stageKills=0;stageDmg=0;stageT=0;combo=0;maxCombo=0;
   for(const e of enemies){if(e.mesh){arena.remove(e.mesh);arena.remove(e.blob)}if(e.m)arena.remove(e.m.root)}enemies=[];boss=null;for(const q of eProj)fxRoot.remove(q.s);eProj=[];
   for(const t of teles){fxRoot.remove(t.g)}teles.length=0;for(const f of fxs){if(f.obj)fxRoot.remove(f.obj)}fxs.length=0;parts.length=0;orbs.length=0;texts=[];
@@ -1115,18 +1123,19 @@ function buildSkillsUI(){const w=$('skills');w.innerHTML='';
   SKILLS.forEach((s,i)=>{const b=document.createElement('button');b.className='sk';b.id='sk'+i;b.style.right=SKPOS[i][0]+'px';b.style.bottom=SKPOS[i][1]+'px';if(i===4){b.style.width=b.style.height='70px'}
    b.innerHTML=`<img id="ski${i}" src="img/${s.icon}.webp"><span class="cd" id="skc${i}"></span><span class="lk">🔒<br>${REALMS[s.realm].cn}</span><span class="key">${i+1}</span>`;press(b,()=>useSkill(i));w.appendChild(b)});
   const d=document.createElement('button');d.className='sk dash';d.style.right='262px';d.style.bottom='178px';d.innerHTML='闪<span class="key">K</span>';press(d,()=>dash());w.appendChild(d);layoutSkills()}
+const _ui=new Map();function setT(el,v){if(_ui.get(el)!==v){_ui.set(el,v);el.textContent=v}}function setW(el,v){v=(Math.round(v*10)/10)+'%';if(_ui.get(el)!==v){_ui.set(el,v);el.style.width=v}}function setP(el,v){v=Math.round(v);const k=el.id+'p';if(_ui.get(k)!==v){_ui.set(k,v);el.style.setProperty('--p',v)}}
 function updateSkillsUI(force){SKILLS.forEach((s,i)=>{const b=$('sk'+i);if(!b)return;const lock=save.realm<s.realm;b.classList.toggle('locked',lock);
   if(i===4&&save.realm>=6){const im=$('ski4');if(!im.src.includes(s.icon6))im.src=`img/${s.icon6}.webp`}
-  const c=hero?hero.cd[i]:0;const el=$('skc'+i);el.style.setProperty('--p',lock?0:c/s.cd*100);el.textContent=!lock&&c>0?Math.ceil(c):'';b.classList.toggle('ready',!lock&&c<=0&&i===4)})
-  if(hero){$('bHp').style.width=Math.max(0,hero.hp/hero.maxHp*100)+'%';$('bHpT').textContent=`${fmt(hero.hp)} / ${fmt(hero.maxHp)}`;const need=expNeed(lvIdx());$('bExp').style.width=Math.min(100,save.exp/need*100)+'%';
-   $('bName').textContent=`墨尘 · ${REALMS[save.realm].cn} ${LAYER_CN[save.layer]}层`;if(force)$('bAv').src=`img/hero_t${save.realm}.webp`}
-  if(boss){$('bossHp').style.width=Math.max(0,boss.hp/boss.maxHp*100)+'%';$('bossLag').style.width=Math.max(0,boss.hpLag/boss.maxHp*100)+'%'}
-  $('tAuto').classList.toggle('on',!!save.auto);$('tSpd').textContent='×'+(save.spd||1);$('tSpd').classList.toggle('on',save.spd>1)}
+  const c=hero?hero.cd[i]:0;const el=$('skc'+i);setP(el,lock?0:c/s.cd*100);setT(el,!lock&&c>0?String(Math.ceil(c)):'');b.classList.toggle('ready',!lock&&c<=0&&i===4)})
+  if(hero){setW($('bHp'),Math.max(0,hero.hp/hero.maxHp*100));setT($('bHpT'),`${fmt(hero.hp)} / ${fmt(hero.maxHp)}`);const need=expNeed(lvIdx());setW($('bExp'),Math.min(100,save.exp/need*100));
+   setT($('bName'),`墨尘 · ${REALMS[save.realm].cn} ${LAYER_CN[save.layer]}层`);if(force)$('bAv').src=`img/hero_t${save.realm}.webp`}
+  if(boss){setW($('bossHp'),Math.max(0,boss.hp/boss.maxHp*100));setW($('bossLag'),Math.max(0,boss.hpLag/boss.maxHp*100))}
+  $('tAuto').classList.toggle('on',!!save.auto);setT($('tSpd'),'×'+(save.spd||1));$('tSpd').classList.toggle('on',save.spd>1)}
 $('tAuto').onclick=()=>{save.auto=!save.auto;persist();updateSkillsUI()};
 $('tSpd').onclick=()=>{save.spd=save.spd>1?1:2;persist();updateSkillsUI()};
 $('tPause').onclick=()=>pauseGame();
-function pauseGame(){if(mode!=='battle')return;mode='pause';openModal(`<div class="mt">暂停</div><div class="mrow"><button class="btn gold" id="pRes">继续 · Resume</button><button class="btn" id="pQuit">撤退 · Retreat</button></div><label style="display:block;margin-top:10px;font-size:13px"><input type="checkbox" id="pBloom" ${useBloom?'checked':''}> 辉光特效 Bloom</label>`);
-  $('pRes').onclick=()=>{closeModal();mode='battle'};$('pQuit').onclick=()=>{closeModal();mode='battle';endStage(false)};$('pBloom').onchange=e=>{useBloom=e.target.checked&&!!composer}}
+function pauseGame(){if(mode!=='battle')return;mode='pause';openModal(`<div class="mt">暂停</div><div class="mrow"><button class="btn gold" id="pRes">继续 · Resume</button><button class="btn" id="pQuit">撤退 · Retreat</button></div><div style="margin-top:10px;font-size:13px">画质 Quality: ${['低 Low','中 Med','高 High','极 Ultra'].map((t,i)=>`<button class="btn" style="padding:4px 8px;margin:2px;font-size:12px;${i===QUAL?'outline:2px solid #ffd580':''}" data-q="${i}">${t}</button>`).join('')}</div>`);
+  $('pRes').onclick=()=>{closeModal();mode='battle'};$('pQuit').onclick=()=>{closeModal();mode='battle';endStage(false)};document.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{setQuality(+b.dataset.q,true);document.querySelectorAll('[data-q]').forEach(x=>x.style.outline=+x.dataset.q===QUAL?'2px solid #ffd580':'')})}
 
 /* ---------------- SCREENS ---------------- */
 function showScreen(id){document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('show',s.id===id));if(id!=='loading')$('loading').style.display='none'}
@@ -1185,7 +1194,7 @@ function tribulation(){mode='trib';$('hubBtns').style.visibility='hidden';const 
 /* ---------------- MAIN LOOP ---------------- */
 function frame(now){requestAnimationFrame(frame);try{frameBody(now)}catch(e){if(!frame.err){frame.err=1;showErr('Error: '+e.message);console.error(e)}}}
 function frameBody(now){let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;U_TIME.value=now/1000;
-  fpsAcc+=dt;fpsN++;if(fpsAcc>2){const fps=fpsN/fpsAcc;if(fps<32&&useBloom){lowFps++;if(lowFps>2){useBloom=false;toast('已自动关闭辉光以提升流畅度')}}else lowFps=0;fpsAcc=0;fpsN=0}
+  if(!document.hidden&&mode!=='load'){fpsAcc+=dt;fpsN++;if(fpsAcc>1.5){const fps=fpsN/fpsAcc;if(fps<27&&QUAL>0){lowFps++;if(lowFps>=2){setQuality(QUAL-1);lowFps=0}}else lowFps=0;fpsAcc=0;fpsN=0}}
   shakeV=Math.max(0,shakeV-dt*2.2);flashV=Math.max(0,flashV-dt*2);hurtV=Math.max(0,hurtV-dt*1.6);darkT-=dt;darkA=lerp(darkA,darkT>0?1:0,1-Math.pow(0.002,dt));
   let gdt=dt*(mode==='battle'?(save.spd||1):1);if(slowT>0){slowT-=dt;gdt*=0.3}
   if(hitstop>0){hitstop-=dt;gdt=0}
@@ -1196,7 +1205,8 @@ function frameBody(now){let dt=Math.min(0.05,(now-lastT)/1000);lastT=now;U_TIME.
   if(mode!=='load'){updFx(gdt||dt*0.0001);updParts(mode==='battle'?gdt:dt)}
   // camera shake
   const sx=(Math.random()-0.5)*shakeV*0.6,sy=(Math.random()-0.5)*shakeV*0.6;camera.position.x+=sx;camera.position.y+=sy;
-  if(useBloom&&composer)composer.render();else renderer.render(scene,camera);
+  const mOpen=modalEl.classList.contains('show');frame.skip=(frame.skip||0)+1;
+  if(!mOpen||frame.skip>=6){frame.skip=0;if(useBloom&&composer)composer.render();else renderer.render(scene,camera)}
   camera.position.x-=sx;camera.position.y-=sy;
   drawHUD(dt);if(mode==='battle'||mode==='pause')updateSkillsUI()}
 
@@ -1215,11 +1225,12 @@ async function boot(){
   const texP=IMGS.map(n=>new Promise(res=>tl.load(`img/${n}.webp`,t=>{t.colorSpace=THREE.SRGBColorSpace;TX[n]=t;prog();res()},undefined,()=>{prog();res()})));
   const glbP=['hero_t'+save.realm,'girl'].map(k=>loadModel(k).then(prog));
   await Promise.all([...texP,...glbP]);
+  try{await warmup(['hero_t'+save.realm,'girl'])}catch(e){}
   setTimeout(()=>{try{const b=save.best||0,c=Math.min(CHAPTERS.length-1,Math.floor(b/STAGES_PER));const ks=stageModels(c,0);let i=0;const nxt=()=>{if(i<ks.length)loadModel(ks[i++]).then(()=>setTimeout(nxt,300))};nxt()}catch(e){}},3000);
   $('loadTxt').textContent='灵气已满 · Ready';$('btnEnter').style.display='block';buildSkillsUI();resize();
   $('btnEnter').onclick=()=>{audioInit();sfx('magic');try{if(isTouch&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}catch(_){}goHub();if(save.realm===0&&save.layer===0&&save.exp===0)setTimeout(()=>openModal(`<div class="mt">逆天之路</div><div style="max-width:440px;margin:10px auto;line-height:1.7;font-size:14px">你本是赵国山村一介凡人<b>墨尘</b>，手持凡铁剑踏上修仙路。<br>闯关历练积累<b style="color:#c9a0ff">修为</b>，修为圆满后回洞府<b style="color:#ffd36a">渡劫突破</b>，一步步从凡人蜕变为<b style="color:#fff2c0">踏天之神</b>！<br><span style="font-size:12px;opacity:.8">Farm stages for cultivation EXP, break through realms in your cave abode, and evolve from mortal to god. 左侧拖动移动 · 右侧攻击/神通 · 可开启自动战斗。</span></div><div class="mrow"><button class="btn gold" id="iOk">踏上仙途</button></div>`),400)&&0;setTimeout(()=>{const b=$('iOk');if(b)b.onclick=closeModal},500)};
   requestAnimationFrame(frame);mode='loaded';
-  window.__g={THREE,Model3D,GLB,MODEL_DEF,loadModel,mkModel,materialize,dissolve,makeMeteor,makeIce,makePagoda,propModel,shatter,fxRoot,BATK,hubRoot,camera,poseFor,noBloom(){useBloom=false},get save(){return save},get hero(){return hero},get enemies(){return enemies},get boss(){return boss},startStage,goHub,goMap,useSkill,tribulation,addExp,get mode(){return mode},persist}
+  window.__g={THREE,Model3D,GLB,MODEL_DEF,loadModel,mkModel,materialize,dissolve,makeMeteor,makeIce,makePagoda,propModel,shatter,fxRoot,BATK,hubRoot,camera,poseFor,noBloom(){useBloom=false},renderer,setQuality,get QUAL(){return QUAL},get save(){return save},get hero(){return hero},get enemies(){return enemies},get boss(){return boss},startStage,goHub,goMap,useSkill,tribulation,addExp,get mode(){return mode},persist}
 }
 resize();boot();
 </script>
