@@ -239,7 +239,7 @@ const MODEL_DEF={
  hero_t6:{url:'models/hero_t6.glb',rigOpt:{wpn:{side:-1,armIn:0.19,r:0.035,hand:[-0.32,0.5,0.12],tip:[-0.34,0.0,0.3]}},h:2.0,glow:{h:45,w:14,v:0.82,s:0.4,i:1.8}},
  pup_t2:{url:'models/pup_t2.glb',fallback:'girl',h:1.6,skinned:true},
  prop_heavensword:{url:'models/prop_heavensword.glb',optional:true},
- boss_evilimm:{url:'models/boss_evilimm.glb',fallback:'deity',h:3.8},
+ boss_evilimm:{url:'models/boss_evilimm.glb',fallback:'deity',h:3.8,rigOpt:{sh:0.12,shY:0.45,wpn:{side:-1,hand:[-0.16,0.34,0.14],tip:[-0.37,0.02,0.24]}}},
  ice_dragon:{url:'models/ice_dragon.glb',optional:true},
  phoenix:{url:'models/phoenix.glb',optional:true},
  pup_t4:{url:'models/pup_t4.glb',fallback:'girl',h:1.65},
@@ -259,7 +259,7 @@ const MODEL_DEF={
  frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf',quad:true,geoYaw:-Math.PI/2,h:1.2,glow:{h:188,w:16,v:0.65,s:0.35,i:2.4,pcol:0xbff4ff,rate:15}},
  prop_meteor:{url:'models/prop_meteor.glb',prop:true},prop_ice:{url:'models/prop_ice.glb',prop:true},prop_pagoda:{url:'models/prop_pagoda.glb',prop:true}
 };
-const BUILD='5.0.1';/* v4.2 */const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+const BUILD='5.1';/* v4.2 */const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 (function selfUpdate(){try{if(!/^https?:/.test(location.protocol)||location.hostname.endsWith('claude.ai')||location.hostname.includes('claudeusercontent'))return;
  fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(!m||m[1]===BUILD)return;
   const k='xn_upd_'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1])}).catch(()=>{})}catch(e){}})();
@@ -360,43 +360,56 @@ const SKT=[
 const SKT_BY=Object.fromEntries(SKT.map(k=>[k.id,k]));
 /* ===== PUPPETS 傀儡 v5 — 7 puppets, each with 3 own skills, 3 evolution stages ===== */
 const PUPS=[
- {id:'sword',ch:-1,el:'sword',col:0xbfe0ff,css:'#bfe0ff',melee:1,h:[1.55,1.62,1.7],
+ {id:'sword',style:'sword',ch:-1,el:'sword',col:0xbfe0ff,css:'#bfe0ff',melee:1,h:[1.5,1.58,1.66],
   cn:['剑童','剑修','剑仙'],en:['Sword Youth','Sword Cultivator','Sword Immortal'],desc:'凡人少年，一步步修成剑仙 · A mortal boy who grows into a sword immortal',
   sk:[['疾风剑','Swift Slash','ps_sword0',5,ppDash,['疾冲一剑','进阶：双重疾斩','极：三连斩 + 剑气']],
-      ['剑气纵横','Sword Qi Barrage','ps_sword1',8,ppQi,['三道剑气','进阶：五道剑气','极：七道剑气 + 巨型剑气']],
       ['御剑诀','Flying Swords','ps_sword2',14,ppFly,['御使四剑','进阶：七剑齐飞','极：十二飞剑']]]},
- {id:'mantis',ch:0,el:'sword',col:0x5aff8a,css:'#7affa0',melee:1,h:[1.5,1.65,1.8],
+ {id:'mantis',style:'scythe',ch:0,el:'sword',col:0x5aff8a,css:'#7affa0',melee:1,h:[1.5,1.65,1.8],
   cn:['灵螳','玄甲螳','螳皇'],en:['Spirit Mantis','Armored Mantis','Mantis King'],desc:'神秘螳螂，以双臂利刃斩敌 · A mystical mantis with blade arms',
   sk:[['螳臂斩','Scythe X-Slash','ps_mantis0',5,ppX,['十字斩','进阶：双重十字斩','极：十字斩 + 飞刃']],
-      ['旋刃风暴','Blade Whirl','ps_mantis1',9,ppWhirl,['旋身刃风','进阶：刃风更大更久','极：刃风追敌']],
       ['千刃斩','Thousand Cuts','ps_mantis2',14,ppCuts,['八连斩','进阶：十四连斩','极：二十二斩 + 终结十字']]]},
- {id:'orc',ch:1,el:'sword',col:0xffa040,css:'#ffb060',melee:1,h:[1.6,1.75,1.9],
+ {id:'orc',style:'fist',ch:1,el:'sword',col:0xffa040,css:'#ffb060',melee:1,h:[1.6,1.75,1.9],
   cn:['四臂魔兵','四臂战魔','四臂魔帝'],en:['Orc Brawler','Orc Champion','Orc Titan'],desc:'远古四臂兽人，拳拳到肉 · An ancient four-armed orc fighter',
   sk:[['四臂连拳','Four-Fist Barrage','ps_orc0',5,ppFists,['四连拳','进阶：八连拳','极：十二连拳']],
-      ['碎地击','Ground Smash','ps_orc1',9,ppSmash,['跃起砸地','进阶：裂地更长','极：双重砸地']],
-      ['天崩拳','Sky-Breaking Fist','ps_orc2',15,ppSkyFist,['巨拳天降','进阶：巨拳更大','极：三拳崩天']]]},
- {id:'demon',ch:2,el:'dark',col:0xff2a4a,css:'#ff6a80',melee:0,h:[1.6,1.7,1.8],
+      ['碎地击','Ground Smash','ps_orc1',9,ppSmash,['跃起砸地','进阶：裂地更长','极：双重砸地']]]},
+ {id:'demon',style:'staff',ch:2,el:'dark',col:0xff2a4a,css:'#ff6a80',melee:0,h:[1.6,1.7,1.8],
   cn:['魔卫','血魔卫','魔卫之主'],en:['Demon Guard','Blood Demon Guard','Demon Guardian Lord'],desc:'邪恶魔卫，诅咒与血咒 · An evil guardian of curses and blood',
   sk:[['血咒','Blood Curse','ps_demon0',6,ppCurse,['诅咒一敌','进阶：诅咒三敌','极：诅咒五敌，咒爆']],
-      ['血矛','Blood Spears','ps_demon1',9,ppSpears,['一道血矛','进阶：三道血矛','极：五道血矛']],
       ['血月祭','Blood Moon Ritual','ps_demon2',15,ppMoon,['血月吸魂，为主人回血','进阶：血月更大','极：血月爆裂']]]},
- {id:'dragon',ch:3,el:'fire',el2:'ice',col:0xff6a3a,css:'#ff9a7a',melee:0,h:[1.15,1.35,1.6],float:0.15,
+ {id:'dragon',style:'wing',ch:3,el:'fire',el2:'ice',col:0xff6a3a,css:'#ff9a7a',melee:0,h:[1.15,1.35,1.6],float:0.15,
   cn:['双首幼龙','冰火双龙','太古双首龙'],en:['Twin-Head Whelp','Fire-Ice Dragon','Ancient Twin Dragon'],desc:'冰火双首龙，一首喷火一首吐冰 · A two-headed dragon of fire and ice',
   sk:[['冰火吐息','Fire & Ice Breath','ps_dragon0',6,ppBreath,['双息喷吐','进阶：吐息更久','极：吐息更远更猛']],
-      ['冰火流星','Fire-Ice Meteors','ps_dragon1',10,ppMeteors,['四颗流星','进阶：七颗流星','极：十一颗流星']],
-      ['阴阳龙卷','Yin-Yang Dragons','ps_dragon2',16,ppYinYang,['火龙出击','进阶：冰火双龙','极：双龙缠绕 + 终爆']]]},
- {id:'space',ch:4,el:'thunder',col:0xb48aff,css:'#c9a0ff',melee:0,h:[1.6,1.7,1.85],
+      ['冰火流星','Fire-Ice Meteors','ps_dragon1',10,ppMeteors,['四颗流星','进阶：七颗流星','极：十一颗流星']]]},
+ {id:'space',style:'spear',ch:4,el:'thunder',col:0xb48aff,css:'#c9a0ff',melee:1,h:[1.6,1.7,1.85],
   cn:['星域武者','星河战将','宇宙战神'],en:['Star Warrior','Galaxy General','Universe War God'],desc:'来自星空的远古战士，撕裂空间 · An ancient warrior from space who splits space',
   sk:[['空间斩','Void Slash','ps_space0',6,ppRift,['一道空间裂痕','进阶：双重裂痕','极：三重裂痕 + 空爆']],
-      ['星门','Star Gate','ps_space1',10,ppGate,['星门吞噬','进阶：星门更强','极：双星门']],
       ['宇宙裂界','Universe Rend','ps_space2',17,ppRend,['一斩裂界','进阶：十字裂界','极：三斩开天']]]},
- {id:'gsword',ch:5,el:'sword',col:0xffd36a,css:'#ffe08a',melee:0,h:[1.7,1.95,2.2],float:0.55,
+ {id:'gsword',style:'prop',ch:5,el:'sword',col:0xffd36a,css:'#ffe08a',melee:0,h:[1.7,1.95,2.2],float:0.6,
   cn:['重剑','符文巨剑','天帝神剑'],en:['Heavy Greatsword','Runed Greatsword','Divine God Sword'],desc:'通灵巨剑，由凡铁蜕变为神剑 · A living greatsword that becomes a god sword',
   sk:[['巨剑冲锋','Sword Charge','ps_gsword0',6,ppCharge,['一柄巨剑冲锋','进阶：三柄巨剑','极：五柄巨剑']],
-      ['万剑雨','Sword Rain','ps_gsword1',10,ppRain,['八剑升空坠落','进阶：十四剑','极：二十二剑']],
-      ['神剑天降','Divine Sword Descent','ps_gsword2',16,ppDescend,['天降神剑','进阶：神剑更大','极：三柄神剑']]]}
+      ['万剑雨','Sword Rain','ps_gsword1',10,ppRain,['八剑升空坠落','进阶：十四剑','极：二十二剑']]]}
 ];
-PUPS.forEach(P=>[0,1,2].forEach(s=>{const k='pp_'+P.id+(s+1);MODEL_DEF[k]={url:`models/${k}.glb`,optional:!P.fb,fallback:P.fb?P.fb[s]:undefined,h:P.h[s]}}));
+const PPM={
+ pp_sword1:{h:1.5,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.44,wpn:{side:-1,hand:[-0.12,0.31,0.05],tip:[-0.33,0.11,0.2]}}},
+ pp_sword2:{h:1.58,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.44,wpn:{side:-1,hand:[-0.135,0.35,0.1],tip:[-0.35,0.095,0.2]}}},
+ pp_sword3:{h:1.66,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.45,wpn:{side:-1,hand:[-0.15,0.34,0.1],tip:[-0.4,0.02,0.29]}}},
+ pp_mantis1:{h:1.45,amp:{body:0.35,arm:1.1},rigOpt:{sh:0.1,shY:0.45,armIn:0.13,armOut:0.18,hd:[0.47,0.53],aw:[0.18,0.24,0.52,0.58]}},
+ pp_mantis2:{h:1.55,amp:{body:0.35,arm:1.1},rigOpt:{sh:0.12,shY:0.44,armIn:0.16,armOut:0.21,hd:[0.46,0.51],aw:[0.16,0.22,0.54,0.6]}},
+ pp_mantis3:{h:1.65,amp:{body:0.35,arm:1.1},rigOpt:{sh:0.13,shY:0.43,armIn:0.17,armOut:0.22,hd:[0.43,0.48],aw:[0.16,0.22,0.56,0.62]}},
+ pp_orc1:{h:1.5,amp:{body:0.55},rigOpt:{sh:0.16,shY:0.56,armIn:0.14,armOut:0.19,hd:[0.6,0.66],aw:[0.24,0.3,0.6,0.64],arm2:{y:0.43,sh:0.14,shY:0.45}}},
+ pp_orc2:{h:1.6,amp:{body:0.55},rigOpt:{sh:0.17,shY:0.53,armIn:0.16,armOut:0.21,hd:[0.56,0.62],aw:[0.2,0.26,0.57,0.61],arm2:{y:0.38,sh:0.15,shY:0.41}}},
+ pp_orc3:{h:1.72,fallback:'pp_orc2',fbTint:[1.35,1.12,0.62],amp:{body:0.55},rigOpt:{sh:0.17,shY:0.53,armIn:0.16,armOut:0.21,hd:[0.56,0.62],aw:[0.2,0.26,0.57,0.61],arm2:{y:0.38,sh:0.15,shY:0.41}}},
+ pp_demon1:{h:1.55,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.47,wpn:{side:-1,hand:[-0.196,0.437,0.13],tip:[-0.27,0.737,0.12],fit:false,r:0.05,tb:-1.35}}},
+ pp_demon2:{h:1.62,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.47,wpn:{side:-1,hand:[-0.2,0.43,0.15],tip:[-0.237,0.9,0.14],fit:false,r:0.05,tb:-0.85}}},
+ pp_demon3:{h:1.7,amp:{body:0.55},rigOpt:{sh:0.13,shY:0.47,wpn:{side:-1,hand:[-0.26,0.43,0.12],tip:[-0.3,0.83,0.12],fit:false,r:0.05,tb:-1.05}}},
+ pp_dragon1:{h:0.95,quad:true,rigOpt:{leg:[0.16,0.28],hu:[0.12,0.26],hh:[0.42,0.55]}},
+ pp_dragon2:{h:1.1,quad:true,geoYaw:-Math.PI/2,rigOpt:{leg:[0.16,0.28],hu:[0.12,0.26],hh:[0.45,0.58]}},
+ pp_dragon3:{h:1.25,quad:true,rigOpt:{leg:[0.12,0.24],hu:[0.1,0.24],hh:[0.48,0.6]}},
+ pp_space1:{h:1.58,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.46,wpn:{side:-1,hand:[-0.237,0.416,0.17],tip:[-0.287,0.985,0.17],fit:false,r:0.05,tb:-0.72}}},
+ pp_space2:{h:1.64,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.47,wpn:{side:-1,hand:[-0.19,0.45,0.17],tip:[-0.19,0.965,0.17],fit:false,r:0.05,tb:-0.84}}},
+ pp_space3:{h:1.72,amp:{body:0.55},rigOpt:{sh:0.12,shY:0.46,wpn:{side:-1,hand:[-0.21,0.42,0.1],tip:[-0.22,0.88,0.1],fit:false,r:0.05,tb:-0.9}}},
+ pp_gsword1:{h:1.5,norig:true},pp_gsword2:{h:1.65,norig:true,fallback:'pp_gsword1',fbTint:[0.85,1.0,1.25]},pp_gsword3:{h:1.8,norig:true}};
+for(const k in PPM)MODEL_DEF[k]={url:`models/${k}.glb`,...PPM[k]};
 if(!save.pp){const t=save.pup?save.pup.t:0;save.pp={act:'sword',st:{sword:t>=4?2:t>=2?1:0}}}
 const EVO=[[0,0],[2,5000],[4,60000]];
 const ppIdx=P=>PUPS.indexOf(P),ppUnl=P=>P.ch<0||!!save.cleared[P.ch+'-3'],ppSt=P=>Math.min(2,save.pp.st[P.id]||0);
@@ -416,8 +429,8 @@ class SpriteActor{constructor(name,h,o={}){this.isSprite=true;this.o=o;this.h=h;
   this.flash=Math.max(0,this.flash-dt*5);this.mat.color.setRGB(1,1-this.flash*0.55,1-this.flash*0.55)}
  hit(c,a=1){this.flash=a}reset(){}setCut(){}disposeGPU(){}blade(){return false}emitGlow(){}}
 function buildAlly(){if(ally){releaseModel(ally.m)}ally=null;const P=ppCur(),s=ppSt(P),k=ppKey(P,s);let m;
-  if(GLB[k]){const fb=!!GLB_SRC[k];m=getModel(k,{shadow:0.8,h:P.h[s],tint:fb?P.tint:undefined})}else m=new SpriteActor(k,P.h[s],{float:P.float});
-  ally={m,P,s,pos:new THREE.Vector3(),fx:1,fz:0,y:0,state:'idle',st:0,dur:0,cd:[1,0,0],scd:[2,5,9],lock:0,tier:s};
+  if(GLB[k]){const md=MODEL_DEF[k];m=getModel(k,{shadow:0.8,h:md.h||P.h[s],tint:GLB_SRC[k]?md.fbTint:undefined});if(P.style==='prop'){m.propH=(md.h||1.6)*0.5;m.obj.position.y=-m.propH}}else m=new SpriteActor(k,P.h[s],{float:P.float});
+  ally={m,P,s,pos:new THREE.Vector3(),fx:1,fz:0,y:0,state:'idle',st:0,dur:0,cd:[1,0,0],scd:[2.5,6],lock:0,tier:s,aIdx:0,combo:0};
   if(s>=1){const r=decal(0,0,1.5+s*0.3,P.col,0.5);r.position.set(0,0.03,0);m.root.add(r);ally.ring=r}}
 const ppTgt=(C,r=12)=>{const b=boss&&boss.alive&&Math.hypot(boss.pos.x-C.pos.x,boss.pos.z-C.pos.z)<r+4?boss:null;return b||nearestEnemy(r,C.pos)};
 const ppAll=()=>enemies.filter(e=>e.alive&&e.state!=='spawn');
@@ -430,7 +443,7 @@ const scrAng=a=>Math.atan2(-Math.sin(a)*0.45,Math.cos(a));
 const ppA=(C,t)=>t?Math.atan2(t.pos.z-C.pos.z,t.pos.x-C.pos.x):Math.atan2(C.fz||0,C.fx||1);
 
 /* --- 剑傀 SWORD PUPPET --- */
-function ppDash(f,C,a){const col=[0xd8ecff,0xbfe8ff,0xfff0b0][f];for(let i=0;i<=f;i++)later(i*0.3,()=>{const t=ppTgt(C,10);if(!t)return;const sd=Math.sign(t.pos.x-a.pos.x)||1;C.anim('attack',0.3);sfx('slash',0.06);
+function ppDash(f,C,a){const col=[0xd8ecff,0xbfe8ff,0xfff0b0][f];for(let i=0;i<=f;i++)later(i*0.3,()=>{const t=ppTgt(C,10);if(!t)return;const sd=Math.sign(t.pos.x-a.pos.x)||1;C.anim('attack',0.34,i%3);sfx('slash',0.06);
    ppLunge(a,t.pos.x+sd*(t.radius+0.8),t.pos.z+rand(-0.3,0.3),0.15,col);later(0.08,()=>{swingCrescent(t.pos.x,1,t.pos.z,sd>0?0:Math.PI,col,1.9,i%2?-0.5:0.5,0.22);hitEnemy(t,1.9*C.mul,{el:'sword',kb:2,fx:a.pos.x,fz:a.pos.z});emit(t.pos.x,1,t.pos.z,10,{col:[col,0xffffff],v0:2,v1:6,l0:0.2,l1:0.5})})});
   if(f>=2)later(0.95,()=>{const t=ppTgt(C,12);moonBlade({x:a.pos.x,z:a.pos.z,y:1.2,ang:ppA(C,t),col:0xfff0b0,size:2.8,speed:14,life:0.9,dmg:2.6*C.mul,el:'sword',kb:4,grow:0.4})})}
 function ppQi(f,C,a){const n=[3,5,7][f],col=[0xd8ecff,0xbfe8ff,0xfff0b0][f],a0=ppA(C,ppTgt(C,14));C.anim('attack',0.4);sfx('slash');
@@ -445,23 +458,23 @@ function ppFly(f,C,a){const N=[4,7,12][f],col=[0x9fd8ff,0xbfe8ff,0xffd36a][f];C.
      if(k>=1&&!q.hit){q.hit=1;sw.visible=false;hitEnemy(tg,1.3*C.mul,{el:'sword',small:true,kb:1});emit(tx,0.9,tz,8,{col:[col,0xffffff],v0:2,v1:5,l0:0.2,l1:0.4});sfx('hit',0.04)}}})}}
 /* --- 灵螳 MANTIS --- */
 function ppX(f,C,a){const col=[0x5aff8a,0x3affb0,0xc8ff6a][f];const t=ppTgt(C,9);if(!t)return;const sd=Math.sign(t.pos.x-a.pos.x)||1;if(Math.abs(t.pos.x-a.pos.x)>2.4)ppLunge(a,t.pos.x-sd*(t.radius+0.9),t.pos.z,0.14,col);
-  const xs=n=>later(0.12+n*0.28,()=>{if(!t.alive)return;C.anim('attack',0.3);sfx('slash',0.05);swingCrescent(t.pos.x,1.1,t.pos.z,sd>0?0:Math.PI,col,2.1,0.85,0.22);later(0.06,()=>swingCrescent(t.pos.x,1.1,t.pos.z,sd>0?0:Math.PI,col,2.1,-0.85,0.22,-1));
+  const xs=n=>later(0.12+n*0.28,()=>{if(!t.alive)return;C.anim('attack',0.36,n%2);sfx('slash',0.05);swingCrescent(t.pos.x,1.1,t.pos.z,sd>0?0:Math.PI,col,2.1,0.85,0.22);later(0.06,()=>swingCrescent(t.pos.x,1.1,t.pos.z,sd>0?0:Math.PI,col,2.1,-0.85,0.22,-1));
    hitEnemy(t,1.4*C.mul,{el:'sword',kb:1});later(0.06,()=>{if(t.alive)hitEnemy(t,1.4*C.mul,{el:'sword',kb:1.5})});emit(t.pos.x,1.1,t.pos.z,14,{col:[col,0xffffff],v0:2,v1:6,l0:0.2,l1:0.5})});
   xs(0);if(f>=1)xs(1);if(f>=2)later(0.75,()=>{const a0=ppA(C,ppTgt(C,12));for(const r of [0.85,-0.85])moonBlade({x:a.pos.x,z:a.pos.z,y:1.1,ang:a0,col,size:2.2,speed:15,life:0.8,dmg:1.8*C.mul,el:'sword',roll:r,kb:2})})}
 function ppWhirl(f,C,a){const D=[1.6,2.2,3][f],R=[2.2,2.8,3.4][f],col=[0x5aff8a,0x3affb0,0xc8ff6a][f];C.anim('cast',D);sfx('whoosh');let sp=0,tk=0;
   addFx({dur:D,upd(q,dt){sp-=dt;tk-=dt;a.fx=Math.sin(q.t*22)>0?1:-1;if(f>=2&&a.lock<=0){const e=nearestEnemy(8,a.pos);if(e){const dx=e.pos.x-a.pos.x,dz=e.pos.z-a.pos.z,d=Math.hypot(dx,dz)||1;a.pos.x+=dx/d*3*dt;a.pos.z+=dz/d*3*dt}}
    if(sp<=0){sp=0.09;const an=q.t*14;swingCrescent(a.pos.x,0.7+Math.random()*0.8,a.pos.z,an,col,R*0.62,rand(-0.4,0.4),0.18)}
    if(tk<=0){tk=0.3;sfx('slash',0.12);for(const e of near1(a.pos.x,a.pos.z,R))hitEnemy(e,0.55*C.mul,{el:'sword',small:true,quiet:true,kb:0.6,fx:a.pos.x,fz:a.pos.z})}}})}
-function ppCuts(f,C,a){const N=[8,14,22][f],col=[0x5aff8a,0x3affb0,0xc8ff6a][f];const t=ppTgt(C,10);if(!t)return;C.anim('attack',N*0.06);
-  for(let i=0;i<N;i++)later(i*0.06,()=>{if(!t.alive)return;swingCrescent(t.pos.x+rand(-0.4,0.4),rand(0.6,1.6),t.pos.z,rand(0,6.28),col,rand(1.2,1.9),rand(-1.2,1.2),0.14);hitEnemy(t,0.42*C.mul,{el:'sword',small:true,quiet:i%3!==0});if(i%3===0)sfx('slash',0.06)});
-  if(f>=2)later(N*0.06+0.15,()=>{if(!t.alive)return;shake(0.5);hitstop=0.06;for(const r of [0.8,-0.8])swingCrescent(t.pos.x,1.2,t.pos.z,0,0xffffff,3.2,r,0.25);scorch(t.pos.x,t.pos.z,3,col);ringFx(t.pos.x,t.pos.z,col,3,0.5);hitEnemy(t,3*C.mul,{el:'sword',kb:4})})}
+function ppCuts(f,C,a){const N=[8,14,22][f],col=[0x5aff8a,0x3affb0,0xc8ff6a][f];const t=ppTgt(C,10);if(!t)return;
+  for(let i=0;i<N;i++)later(i*0.06,()=>{if(!t.alive)return;if(i%3===0)C.anim('attack',0.2,(i/3|0)%2);swingCrescent(t.pos.x+rand(-0.4,0.4),rand(0.6,1.6),t.pos.z,rand(0,6.28),col,rand(1.2,1.9),rand(-1.2,1.2),0.14);hitEnemy(t,0.42*C.mul,{el:'sword',small:true,quiet:i%3!==0});if(i%3===0)sfx('slash',0.06)});
+  if(f>=2)later(N*0.06+0.15,()=>{if(!t.alive)return;C.anim('attack',0.45,2);shake(0.5);hitstop=0.06;for(const r of [0.8,-0.8])swingCrescent(t.pos.x,1.2,t.pos.z,0,0xffffff,3.2,r,0.25);scorch(t.pos.x,t.pos.z,3,col);ringFx(t.pos.x,t.pos.z,col,3,0.5);hitEnemy(t,3*C.mul,{el:'sword',kb:4})})}
 /* --- 四臂战魔 ORC --- */
 function fistFx(x,y,z,dir,sc,col){const fs=bill(FXT('fx_handgrab'),sc*0.66,sc,{alpha:true,col,ro:6}),gl=glowSprite(0xffb050,sc*1.3,0.7);const g=new THREE.Group();g.add(gl);g.add(fs);g.position.set(x-dir*0.8,y,z);
   addFx({obj:g,dur:0.22,upd(q){const k=Math.min(1,q.t/0.08);g.position.x=x-dir*0.8*(1-k);faceCam(fs,-dir*Math.PI/2);fs.scale.x=sc*0.66;fs.material.opacity=q.t>0.12?Math.max(0,1-(q.t-0.12)/0.1):1;gl.material.opacity=0.7*fs.material.opacity}})}
 function ppFists(f,C,a){const N=[4,8,12][f];const t=ppTgt(C,9);if(!t)return;const sd=Math.sign(t.pos.x-a.pos.x)||1;if(Math.abs(t.pos.x-a.pos.x)>2.2)ppLunge(a,t.pos.x-sd*(t.radius+0.9),t.pos.z,0.14,0xffa040);
-  for(let i=0;i<N;i++)later(0.15+i*0.09,()=>{if(!t.alive)return;C.anim('attack',0.12);const y=[1.5,0.9,1.3,0.7][i%4];fistFx(t.pos.x-sd*0.4,y,t.pos.z+0.2,sd,0.9,0xffe0c0);ringFx(t.pos.x,t.pos.z,0xffb050,0.8,0.2,y);
+  for(let i=0;i<N;i++)later(0.15+i*0.09,()=>{if(!t.alive)return;C.anim('attack',i===N-1?0.4:0.17,i===N-1?2:i%2);const y=[1.5,0.9,1.3,0.7][i%4];fistFx(t.pos.x-sd*0.4,y,t.pos.z+0.2,sd,0.9,0xffe0c0);ringFx(t.pos.x,t.pos.z,0xffb050,0.8,0.2,y);
    emit(t.pos.x-sd*0.3,y,t.pos.z,5,{col:[0xffd080,0xffffff],v0:2,v1:5,l0:0.15,l1:0.3});const last=i===N-1;hitEnemy(t,(last?1.6:0.55)*C.mul,{el:'sword',small:!last,quiet:!last&&i%2,kb:last?5:0.3,fx:a.pos.x,fz:a.pos.z});sfx('hit',0.05);if(last)shake(0.4)})}
-function ppSmash(f,C,a){const n=f>=2?2:1,L=[4,6,8][f];for(let s=0;s<n;s++)later(s*0.7,()=>{const a0=ppA(C,ppTgt(C,12)),y0=a.y||0;a.lock=0.5;C.anim('attack',0.5);
+function ppSmash(f,C,a){const n=f>=2?2:1,L=[4,6,8][f];for(let s=0;s<n;s++)later(s*0.7,()=>{const a0=ppA(C,ppTgt(C,12)),y0=a.y||0;a.lock=0.5;C.anim('attack',0.55,2);
    addFx({dur:0.45,upd(q,dt){const k=q.t/0.45;a.y=Math.sin(k*Math.PI)*1.6;a.pos.x=clamp(a.pos.x+Math.cos(a0)*2.2*dt,B.x0,B.x1)},end(){a.y=0;const x=a.pos.x+Math.cos(a0)*0.8,z=a.pos.z;shake(0.7);hitstop=0.06;sfx('boom',0.05);scorch(x,z,3.2,0xff8a30);ringFx(x,z,0xffb050,3,0.5);
      emit(x,0.3,z,40,{col:[0x8a6a4a,0xffb050,0xffffff],v0:3,v1:9,up:4,g:-12,l0:0.4,l1:0.9});hitR(C,x,z,2.4,1.8*C.mul,{el:'sword',kb:3,stun:0.4,fx:x,fz:z});
      for(let i=1;i<=L;i++)later(i*0.05,()=>{const px=x+Math.cos(a0)*i*1.15,pz=clamp(z+Math.sin(a0)*i*1.15,B.z0,B.z1);pillarFx(px,pz,0xffa040,2.2,0.4,0.45);emit(px,0.2,pz,8,{col:[0x7a5a3a,0xffb050],v0:2,v1:6,up:3,g:-14,l0:0.4,l1:0.8});
@@ -487,13 +500,13 @@ function ppSpears(f,C,a){const lines=[1,3,5][f],a0=ppA(C,ppTgt(C,14));C.anim('ca
     const gl=glowSprite(0xff2040,1.6,0.8);gl.position.y=0.7;g.add(gl);g.position.set(x,0,z);emit(x,0.2,z,8,{col:[0xff2a4a,0x5a0010],v0:2,v1:5,up:3,g:-10,l0:0.3,l1:0.6});
     addFx({obj:g,dur:0.8,upd(q){const k=q.t<0.1?eBack(q.t/0.1):q.t>0.55?Math.max(0,1-(q.t-0.55)/0.25):1;g.children.forEach(c=>{if(c.isMesh)c.scale.set(1,k*c.userData.s,1)});gl.material.opacity=0.8*k}});
     for(const e of near1(x,z,1.05))if(!hit.has(e)){hit.add(e);hitEnemy(e,1.1*C.mul,{el:'dark',kb:0.5,slow:1})}})}}
-function ppMoon(f,C,a){const R=[3.5,4.5,5.5][f],D=[2.5,3,3.5][f];C.anim('cast',1.2);sfx('magic');const t=ppTgt(C,14);const x=t?t.pos.x:a.pos.x+a.fx*4,z=t?t.pos.z:0;
+function ppMoon(f,C,a){const R=[3.5,4.5,5.5][f],D=[2.5,3,3.5][f];C.anim('cast',1.4,1);sfx('magic');const t=ppTgt(C,14);const x=t?t.pos.x:a.pos.x+a.fx*4,z=t?t.pos.z:0;
   const disk=flatFx(FXT('fx_array'),0.1,0xff2030,0.9),moon=glowSprite(0xff1020,4,0.95),moon2=glowSprite(0xffb0a0,1.8,0.9);moon.position.set(x,4.3,z-1);moon2.position.copy(moon.position);disk.position.set(x,0.05,z);const g=new THREE.Group();g.add(disk);g.add(moon);g.add(moon2);let tk=0;
   addFx({obj:g,dur:D,upd(q,dt){const k=Math.min(1,q.t/0.35)*(q.t>D-0.35?(D-q.t)/0.35:1);disk.scale.set(R*2.2*k,1,R*2.2*k);disk.rotation.y+=dt*1.2;moon.material.opacity=0.95*k;moon2.material.opacity=0.9*k;moon.scale.setScalar(4+Math.sin(q.t*6)*0.4);
     tk-=dt;if(tk<=0){tk=0.4;let n=0;for(const e of near1(x,z,R)){hitEnemy(e,0.5*C.mul,{el:'dark',small:true,quiet:true});n++;emit(e.pos.x,1.2,e.pos.z,4,{col:[0xff2a4a,0xff8a9a],dir:[x-e.pos.x,4,z-1-e.pos.z],v0:3,v1:5,g:0,l0:0.5,l1:0.9})}if(n&&!hero.dead)healHero(hero.maxHp*Math.min(0.03,0.008*n))}
     if(f>=2&&q.t>D-0.3&&!q.b){q.b=1;flashV=0.35;shake(0.8);sfx('boom');ringFx(x,z,0xff2a4a,R+1,0.7);pillarFx(x,z,0xff2a4a,10,1.6,0.7);scorch(x,z,R*2,0xff2a4a);emit(x,0.6,z,80,{col:[0xff2a4a,0xffffff,0x5a0010],v0:4,v1:12,up:3,g:-6,l0:0.4,l1:1});hitR(C,x,z,R+0.5,3*C.mul,{el:'dark',kb:5,fx:x,fz:z})}}})}
 /* --- 冰火双首龙 TWIN DRAGON --- */
-function ppBreath(f,C,a){const D=[0.9,1.2,1.5][f],len=[5.5,6.5,8][f],a0=ppA(C,ppTgt(C,12));C.anim('cast',D);sfx('fire');let tk=0;
+function ppBreath(f,C,a){const D=[0.9,1.2,1.5][f],len=[5.5,6.5,8][f],a0=ppA(C,ppTgt(C,12));C.anim('attack',D,0);sfx('fire');let tk=0;
   addFx({dur:D,upd(q,dt){const ox=a.pos.x+Math.cos(a0)*0.8,oz=a.pos.z+Math.sin(a0)*0.8,hy=1.25+(a.y||0);
     for(const [d,cs] of [[-0.16,[0xff6a1a,0xffc040,0xffffff]],[0.16,[0xbff4ff,0x7fd8ff,0xffffff]]]){const an=a0+d;emit(ox,hy+d,oz,9,{col:cs,dir:[Math.cos(an),-0.12,Math.sin(an)],v0:len*1.2,v1:len*1.8,g:0,l0:0.35,l1:0.55,s0:0.3,s1:0.65})}if(!q.gl){q.gl=[glowSprite(0xff7a2a,1.6,0.9),glowSprite(0x9fe8ff,1.6,0.9)];q.gl.forEach(g=>fxRoot.add(g))}q.gl.forEach((g,j)=>{g.position.set(ox,hy+(j?0.16:-0.16),oz);g.material.opacity=0.9*(1-q.t/D)})
     tk-=dt;if(tk<=0){tk=0.2;sfx(Math.random()<0.5?'fire':'ice',0.15);for(const e of enemies){if(!e.alive)continue;if(inSector(e,ox,oz,a0-0.16,len,0.32))hitEnemy(e,0.42*C.mul,{el:'fire',small:true,quiet:true});if(inSector(e,ox,oz,a0+0.16,len,0.32))hitEnemy(e,0.42*C.mul,{el:'ice',small:true,quiet:true,slow:1.5})}}},end(q){if(q.gl)q.gl.forEach(g=>fxRoot.remove(g))}})}
@@ -512,7 +525,7 @@ function riftLine(C,x,z,ang,len,dm,delay){const core=new THREE.Mesh(new THREE.Pl
     glow.scale.set(len*k,1,w*4+0.4);core.scale.set(len*k,1,w);edge.scale.set(len*k,1,0.04+w*0.15);v.scale.set(len*k,3.5*(1-Math.min(1,t/0.4)),1);
     if(t<0.4&&Math.random()<0.9){const r=rand(0,len*k);emit(x+Math.cos(ang)*r,rand(0.1,1.6),z+Math.sin(ang)*r,2,{col:[0xc9a0ff,0xffffff,0x6a3aff],v0:1,v1:4,g:0,l0:0.3,l1:0.7})}
     if(t>=0.12&&!q.hit){q.hit=1;sfx('slash',0.04);shake(0.3);for(const e of enemies)if(e.alive&&inRect(e,x,z,ang,len,1.3))hitEnemy(e,dm,{el:'thunder',kb:1.5,stun:0.3})}},end(){g.children.forEach(c=>c.geometry!==core.geometry&&c.geometry.dispose())}})}
-function ppRift(f,C,a){const a0=ppA(C,ppTgt(C,14));C.anim('attack',0.4);const ls=[[0],[ -0.5,0.5],[-0.6,0,0.6]][f];
+function ppRift(f,C,a){const a0=ppA(C,ppTgt(C,14));C.anim('attack',0.5,1);const ls=[[0],[ -0.5,0.5],[-0.6,0,0.6]][f];
   ls.forEach((d,i)=>riftLine(C,a.pos.x-Math.cos(a0+d)*1,a.pos.z-Math.sin(a0+d)*1,a0+d,12,1.6*C.mul,i*0.12));
   if(f>=2)later(0.55,()=>{const t=ppTgt(C,14);if(!t)return;flashV=0.25;ringFx(t.pos.x,t.pos.z,0xc9a0ff,3,0.5);emit(t.pos.x,1,t.pos.z,40,{col:[0xc9a0ff,0xffffff],v0:3,v1:9,l0:0.3,l1:0.8});hitR(C,t.pos.x,t.pos.z,2.6,2*C.mul,{el:'thunder',kb:3})})}
 function ppGate(f,C,a){const n=f>=2?2:1;C.anim('cast',1);sfx('magic');const al=ppAll();
@@ -522,7 +535,7 @@ function ppGate(f,C,a){const n=f>=2?2:1;C.anim('cast',1);sfx('magic');const al=p
      for(const e of near1(x,z,4.5)){const dx=x-e.pos.x,dz=z-e.pos.z,d=Math.hypot(dx,dz)||1;if(!e.isBoss&&d>0.5){e.pos.x+=dx/d*3*dt;e.pos.z+=dz/d*3*dt}}
      if(Math.random()<0.8){const an=rand(0,6.28);emit(x+Math.cos(an)*2.4,1.6+Math.sin(an)*2.4*0.6,z,1,{col:[0xc9a0ff,0xffffff],dir:[-Math.cos(an),-Math.sin(an)*0.6,0],v0:3,v1:5,g:0,l0:0.3,l1:0.5})}
      if(q.t>=D&&!q.b){q.b=1;flashV=0.25;shake(0.6);sfx('boom',0.05);ringFx(x,z,0xc9a0ff,4,0.6);pillarFx(x,z,0xb48aff,9,1.2,0.6);emit(x,1.4,z,60,{col:[0xc9a0ff,0xffffff,0x6a3aff],v0:3,v1:10,l0:0.3,l1:0.9});hitR(C,x,z,3.2,(f>=1?3:2.2)*C.mul,{el:'thunder',kb:4,fx:x,fz:z})}}})}}
-function ppRend(f,C,a){const n=[1,2,3][f];C.anim('cast',1.4);sfx('magic');const t0=ppTgt(C,16);const cx=t0?t0.pos.x:a.pos.x+a.fx*5,cz=t0?t0.pos.z:0;
+function ppRend(f,C,a){const n=[1,2,3][f];C.anim('attack',0.85,2);sfx('magic');const t0=ppTgt(C,16);const cx=t0?t0.pos.x:a.pos.x+a.fx*5,cz=t0?t0.pos.z:0;
   for(let i=0;i<n;i++){const rz=[0.5,-0.55,0.05][i],dl=0.35+i*0.4;const ln=new THREE.Mesh(QUAD,addMat(0xffffff,1,null)),gl=new THREE.Mesh(QUAD,addMat(0xb48aff,0.9,TEX.glow)),bk=new THREE.Mesh(QUAD,new THREE.MeshBasicMaterial({color:0x05000c,transparent:true,opacity:0.9,depthWrite:false,fog:false}));
    const g=new THREE.Group();g.add(gl);g.add(bk);g.add(ln);g.position.set(cx,2.6,cz+0.5);g.visible=false;bk.position.z=0.01;ln.position.z=0.02;
    addFx({obj:g,dur:dl+1.2,upd(q){const t=q.t-dl;if(t<0)return;g.visible=true;faceCam(g,rz);const k=Math.min(1,t/0.1),w=t<0.25?lerp(0.05,0.9,t/0.25):0.9*Math.max(0,1-(t-0.25)/0.9);
@@ -547,24 +560,38 @@ function ppDescend(f,C,a){C.anim('cast',1.4);sfx('magic');const al=ppAll(),t=ppT
   pts.forEach((e,i)=>{const x=e?e.pos.x:a.pos.x+a.fx*5,z=e?e.pos.z:0;heavenStrike(x,z,[5,6,6][f]*(i===0&&n>1?1.2:1),C.mul,[3.6,4.6,4.2][f],i*0.45,false)})}
 
 /* --- puppet AI --- */
-function ppBasic(a,e){const P=a.P,m=ppMul(P,a.s),dir=Math.sign(e.pos.x-a.pos.x)||1,d=Math.hypot(e.pos.x-a.pos.x,e.pos.z-a.pos.z)-e.radius;
-  if(P.melee){if(d>1.7)return;a.cd[0]=0.85;a.state='cast';a.st=0;a.castDur=0.3;const an=dir>0?0:Math.PI;
-   if(P.id==='orc'){fistFx(e.pos.x-dir*0.4,1.1,e.pos.z+0.2,dir,0.8,0xffe0c0)}else swingCrescent(a.pos.x+dir*0.5,1,a.pos.z,an,P.col,1.5,rand(-0.6,0.6),0.18);
-   hitEnemy(e,0.9*m,{el:P.el,kb:0.6,small:true,quiet:true,fx:a.pos.x,fz:a.pos.z});sfx(P.id==='orc'?'hit':'slash',0.08);return}
-  a.cd[0]=1.2;a.state='cast';a.st=0;a.castDur=0.35;const o=new THREE.Vector3(a.pos.x+dir*0.4,1.2+(P.float||0),a.pos.z);
-  if(P.id==='gsword'){const ang=Math.atan2(e.pos.z-a.pos.z,e.pos.x-a.pos.x);moonBlade({x:a.pos.x,z:a.pos.z,y:1.1,ang,col:P.col,size:1.4,speed:15,life:0.6,dmg:0.85*m,el:'sword',kb:1});return}
-  const n=P.id==='dragon'?2:1;for(let k=0;k<n;k++){const tg=e.pos.clone();tg.y=0.8;const dv=tg.sub(o).normalize();dv.applyAxisAngle(new THREE.Vector3(0,1,0),(k-(n-1)/2)*0.12);shootH(o.clone(),dv,0.8*m,P.id==='dragon'?(k?0x9fe8ff:0xff7a2a):P.col,P.id==='dragon'?(k?'ice':'fire'):P.el)}sfx('coin',0.1)}
+function thrustFx(a,e,col){const dir=Math.sign(e.pos.x-a.pos.x)||1;for(let i=0;i<9;i++)emit(a.pos.x+dir*(0.5+i*0.22),1.05,a.pos.z,1,{col:[col,0xffffff],dir:[dir,0,0],v0:3,v1:6,g:0,l0:0.12,l1:0.25,s0:0.12,s1:0.24});ringFx(e.pos.x,e.pos.z,col,0.8,0.2,1)}
+function ppBasic(a,e){const P=a.P,m=ppMul(P,a.s),dir=Math.sign(e.pos.x-a.pos.x)||1,d=Math.hypot(e.pos.x-a.pos.x,e.pos.z-a.pos.z)-e.radius,st=P.style;
+  const atk=(idx,dur)=>{a.state='attack';a.aIdx=idx;a.st=0;a.castDur=dur};
+  if(P.melee){const reach=st==='spear'?2.3:1.7;if(d>reach)return;a.combo++;a.cd[0]=st==='fist'?0.55:0.85;const idx=st==='fist'?a.combo%2:a.combo%3;atk(idx,st==='fist'?0.34:0.52);const an=dir>0?0:Math.PI;
+   later(st==='fist'?0.1:0.17,()=>{if(!e.alive)return;
+    if(st==='fist')fistFx(e.pos.x-dir*0.4,idx?0.75:1.15,e.pos.z+0.2,dir,0.8,0xffe0c0);
+    else if(st==='spear')thrustFx(a,e,P.col);
+    else if(st==='scythe'){swingCrescent(e.pos.x,1,e.pos.z,an,P.col,1.6,idx%2?-0.8:0.8,0.18)}
+    else swingCrescent(a.pos.x+dir*0.5,1,a.pos.z,an,P.col,1.5,[0.5,-0.6,1.3][idx],0.18);
+    hitEnemy(e,(st==='fist'?0.6:0.9)*m,{el:P.el,kb:0.6,small:true,quiet:true,fx:a.pos.x,fz:a.pos.z});sfx(st==='fist'?'hit':'slash',0.08)});return}
+  a.cd[0]=1.25;a.combo++;
+  if(st==='prop'){atk(0,0.5);later(0.18,()=>{const ang=Math.atan2(e.pos.z-a.pos.z,e.pos.x-a.pos.x);moonBlade({x:a.pos.x,z:a.pos.z,y:1.1,ang,col:P.col,size:1.5,speed:15,life:0.6,dmg:0.85*m,el:'sword',kb:1})});return}
+  atk(0,0.55);const isD=P.id==='dragon';
+  later(0.22,()=>{if(!e.alive)return;const o=new THREE.Vector3(a.pos.x+dir*(isD?0.7:0.5),isD?0.75:1.55,a.pos.z);const n=isD?2:1;
+   for(let k=0;k<n;k++){const tg=e.pos.clone();tg.y=0.8;const dv=tg.sub(o).normalize();dv.applyAxisAngle(new THREE.Vector3(0,1,0),(k-(n-1)/2)*0.12);shootH(o.clone(),dv,0.8*m,isD?(k?0x9fe8ff:0xff7a2a):P.col,isD?(k?'ice':'fire'):P.el)}
+   emit(o.x,o.y,o.z,8,{col:[P.col,0xffffff],v0:1,v1:3,l0:0.2,l1:0.4});sfx('coin',0.1)})}
+function propSwing(a){const p=a.m.pivot,k=Math.min(1,a.st/(a.castDur||0.5));let rx=0,ry=0,y=0;
+  if(a.state==='attack'){rx=k<0.3?0.75*eIO(k/0.3):k<0.55?lerp(0.75,-1.55,eIO((k-0.3)/0.25)):lerp(-1.55,0,eIO((k-0.55)/0.45))}
+  else if(a.state==='cast'){ry=eIO(k)*Math.PI*4;y=Math.sin(k*Math.PI)*0.9;rx=-0.25*Math.sin(k*Math.PI)}
+  else{ry=Math.sin(a.st*0.8)*0.35;rx=Math.sin(a.st*1.3)*0.08}
+  p.rotation.x=rx;p.rotation.y=ry;p.position.y+=(a.m.propH||0)+y}
 function updAlly(dt){const a=ally,h=hero,P=a.P;a.cd=a.cd.map(c=>c-dt);a.scd=a.scd.map(c=>c-dt);a.st+=dt;a.lock-=dt;
   const e=nearestEnemy(9,a.pos),far=Math.hypot(h.pos.x-a.pos.x,h.pos.z-a.pos.z)>7;let tx,tz;
   if(e&&P.melee&&!h.dead&&!far){const sd=Math.sign(e.pos.x-a.pos.x)||1;tx=e.pos.x-sd*(e.radius+0.95);tz=e.pos.z}else{tx=h.pos.x-h.fx*1.5;tz=clamp(h.pos.z-1.1,B.z0,B.z1)}
-  if(a.lock<=0){const dx=tx-a.pos.x,dz=tz-a.pos.z,d=Math.hypot(dx,dz);if(d>0.35){const sp=Math.min(d*3,P.melee?6.2:5.5);a.pos.x+=dx/d*sp*dt;a.pos.z+=dz/d*sp*dt;if(a.state!=='cast')a.state='run';a.fx=dx/d}else if(a.state!=='cast')a.state='idle'}
-  if(a.state==='cast'&&a.st>(a.castDur||0.5))a.state='idle';if(a.ring)a.ring.rotation.y+=dt*0.8;
+  if(a.lock<=0){const dx=tx-a.pos.x,dz=tz-a.pos.z,d=Math.hypot(dx,dz);const busy=a.state==='cast'||a.state==='attack';if(d>0.35){const sp=Math.min(d*3,P.melee?6.2:5.5);a.pos.x+=dx/d*sp*dt;a.pos.z+=dz/d*sp*dt;if(!busy)a.state='run';a.fx=dx/d}else if(!busy)a.state='idle'}
+  if((a.state==='cast'||a.state==='attack')&&a.st>(a.castDur||0.5))a.state='idle';if(a.ring)a.ring.rotation.y+=dt*0.8;
   if(e&&!h.dead){if(a.lock<=0)a.fx=Math.sign(e.pos.x-a.pos.x)||1;
-   for(let i=2;i>=0;i--){const S=P.sk[i];if(a.scd[i]>0||a.state==='cast'||a.lock>0)continue;if(i===2&&!(e.isBoss||enemiesNear(5,a.pos)>=2||enemies.filter(x=>x.alive).length>=3))continue;
-    a.scd[i]=S[3]*1.25+rand(0,1);const C=mkCaster(a,true,ppMul(P,a.s));try{S[4](a.s,C,a)}catch(err){console.error(err)}a.state='cast';a.st=0;a.castDur=Math.max(a.castDur||0.5,0.55);
+   for(let i=P.sk.length-1;i>=0;i--){const S=P.sk[i];if(a.scd[i]>0||a.state==='cast'||a.state==='attack'||a.lock>0)continue;if(i===1&&!(e.isBoss||enemiesNear(5,a.pos)>=2||enemies.filter(x=>x.alive).length>=3))continue;
+    a.scd[i]=S[3]*1.25+rand(0,1);const C=mkCaster(a,true,ppMul(P,a.s));a.state='idle';try{S[4](a.s,C,a)}catch(err){console.error(err)}if(a.state==='idle'){a.state='cast';a.st=0;a.castDur=0.55}
     addText(new THREE.Vector3(a.pos.x,(P.h[a.s]||1.8)+0.5,a.pos.z),S[0],{size:16,c1:'#fff',c2:P.css,vy:0.6,dur:0.9});emit(a.pos.x,1,a.pos.z,12,{col:[P.col,0xffffff],v0:1,v1:3,l0:0.3,l1:0.6});break}
-   if(a.cd[0]<=0&&a.state!=='cast'&&a.lock<=0)ppBasic(a,e)}
-  a.m.root.position.set(a.pos.x,a.y||0,a.pos.z);a.m.face(Math.atan2(a.fx,0.9*Math.abs(a.fx)+0.01),dt,10);a.m.pose(dt,a.state,a.state==='cast'?a.st/(a.castDur||0.5):0,{cad:11})}
+   if(a.cd[0]<=0&&a.state!=='cast'&&a.state!=='attack'&&a.lock<=0)ppBasic(a,e)}
+  a.m.root.position.set(a.pos.x,a.y||0,a.pos.z);a.m.face(Math.atan2(a.fx,0.9*Math.abs(a.fx)+0.01),dt,10);const bz=a.state==='cast'||a.state==='attack';a.m.pose(dt,a.state,bz?Math.min(1,a.st/(a.castDur||0.5)):0,{cad:11,idx:a.aIdx||0,style:P.style,float:P.style==='prop'?0.6:0});if(P.style==='prop'&&!a.m.isSprite)propSwing(a)}
 function shootH(o,dir,mult,col=0xbff4ff,el){const s=glowSprite(col,0.5);s.position.copy(o);fxRoot.add(s);hProj.push({s,dir,mult,t:0,col,el})}
 function updHProj(dt){for(let i=hProj.length-1;i>=0;i--){const q=hProj[i];q.t+=dt;q.s.position.addScaledVector(q.dir,14*dt);const p=q.s.position;if(Math.random()<0.5)emit(p.x,p.y,p.z,1,{col:q.col||0xbff4ff,v0:0,v1:0.2,g:0,l0:0.15,l1:0.25,s0:0.1,s1:0.18});
   let hitE=null;for(const e of enemies){if(e.alive&&Math.hypot(e.pos.x-p.x,e.pos.z-p.z)<e.radius+0.3){hitE=e;break}}
@@ -721,7 +748,7 @@ const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const eIO=k=>{k=clamp(k,0,1);return k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2};
 const eBack=k=>{k=clamp(k,0,1);const c1=2.2,c3=c1+1;return 1+c3*Math.pow(k-1,3)+c1*Math.pow(k-1,2)};
 const Z3=[0,0,0];
-const RIG_KEYS=['hips','chest','head','armL','armR','legL','legR','back','wpn'];
+const RIG_KEYS=['hips','chest','head','armL','armR','legL','legR','back','wpn','arm2L','arm2R'];
 const QKEYS=['body','chest','head','fl','fr','bl','br','tail'];
 function mixPose(a,b,k,KS=RIG_KEYS){const o={};for(const key of KS){const x=a[key]||Z3,y=b[key]||Z3;o[key]=[x[0]+(y[0]-x[0])*k,x[1]+(y[1]-x[1])*k,x[2]+(y[2]-x[2])*k]}return o}
 function track(keys,k,KS){for(let i=0;i<keys.length-1;i++){const [t0,p0,ease]=keys[i],[t1,p1]=keys[i+1];if(k<=t1||i===keys.length-2){const u=(k-t0)/(t1-t0);return mixPose(p0,p1,(ease||eIO)(u),KS)}}return keys[keys.length-1][1]}
@@ -752,9 +779,12 @@ const POSE={
 };
 function poseFor(st,k,t,o){
  const idx=o.idx||0;let p;
- if(st==='idle'||st==='float'){const b=Math.sin(t*2.2);p={chest:[0.035*b,0.03*Math.sin(t*0.7),0],head:[-0.025*Math.sin(t*2.2+0.6),0.08*Math.sin(t*0.5),0],armL:[0.04*Math.sin(t*2.2+0.4),0,0.05+0.04*b],armR:[0.04*Math.sin(t*2.2+0.4),0,-0.05-0.04*b],wpn:[0.05*Math.sin(t*1.7),0.04*Math.sin(t*1.1),0],hips:[0,0.02*Math.sin(t*0.7),0]}}
+ if(false){}
+ else if(o.style==='wing'&&(st==='idle'||st==='run')){p=STYC.wingIdle(st,t,o)}
+ else if(st==='idle'||st==='float'){const b=Math.sin(t*2.2);p={chest:[0.035*b,0.03*Math.sin(t*0.7),0],head:[-0.025*Math.sin(t*2.2+0.6),0.08*Math.sin(t*0.5),0],armL:[0.04*Math.sin(t*2.2+0.4),0,0.05+0.04*b],armR:[0.04*Math.sin(t*2.2+0.4),0,-0.05-0.04*b],wpn:[0.05*Math.sin(t*1.7),0.04*Math.sin(t*1.1),0],hips:[0,0.02*Math.sin(t*0.7),0]}}
  else if(st==='run'){const ph=t*(o.cad||12),s=Math.sin(ph),c=Math.cos(ph*2);p={legL:[-0.6*s,0,0],legR:[0.6*s,0,0],armL:[0.55*s,0,0.12],armR:[-0.55*s,0,-0.12],wpn:[-0.25-0.15*s,0,0],hips:[0.05,0.18*s,0],chest:[0.2+0.04*c,-0.24*s,0],head:[-0.12,0.1*s,0]}}
- else if(st==='attack')p=track(POSE['atk'+Math.min(2,idx)],k);
+ else if(st==='attack')p=track(o.style&&STY[o.style]?STY[o.style][Math.min(2,idx)]:POSE['atk'+Math.min(2,idx)],k);
+ else if(st==='cast'&&o.style&&STYC[o.style]){p=STYC[o.style](k,t,idx)}
  else if(st==='cast'){const w=Math.sin(t*14)*0.05;p=mixPose(N,POSE.cast,1);p.armL=[p.armL[0]+w,0,p.armL[2]];p.armR=[p.armR[0]-w,0,p.armR[2]]}
  else if(st==='hurt')p=track(POSE.hurt,k);
  else if(st==='dash')p=POSE.dash;
@@ -766,6 +796,56 @@ function poseFor(st,k,t,o){
  else p=N;
  return p;
 }
+/*STY_BEGIN*/
+/* weapon move sets for puppets. keys: [t, pose, ease]. armR holds the weapon; wpn = wrist (weapon) bone */
+const STY={
+ /* spear / halberd (tip points up at rest): 0 thrust, 1 horizontal sweep, 2 overhead chop */
+ spear:[
+  [[0,N,eIO],[0.32,{armR:[0.45,0,-0.25],wpn:[1.35,0,0],armL:[-0.6,0,0.45],chest:[-0.08,0.45,0],hips:[0,0.25,0],head:[0,-0.3,0],legL:[-0.35,0,0],legR:[0.3,0,0]},eBack],
+   [0.46,{armR:[-1.1,0,0.1],wpn:[2.45,0,0],armL:[-1.3,0,-0.35],chest:[0.32,-0.3,0],hips:[0.1,-0.2,0],head:[0.15,0.25,0],legL:[-0.65,0,0],legR:[0.5,0,0]},eIO],
+   [0.68,{armR:[-1.0,0,0.1],wpn:[2.4,0,0],armL:[-1.2,0,-0.3],chest:[0.28,-0.25,0],hips:[0.08,-0.15,0],head:[0.12,0.2,0],legL:[-0.55,0,0],legR:[0.45,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.3,{armR:[-0.9,0.4,-0.9],wpn:[1.6,0,0],armL:[-0.5,0,0.4],chest:[0,0.75,0],hips:[0,0.35,0],head:[0,-0.35,0],legR:[0.3,0,0]},eBack],
+   [0.48,{armR:[-1.2,-0.4,0.7],wpn:[1.7,0,0],armL:[-0.3,0,0.6],chest:[0.15,-0.7,0],hips:[0.05,-0.35,0],head:[0.05,0.35,0],legL:[-0.45,0,0],legR:[0.35,0,0]},eIO],
+   [0.66,{armR:[-1.1,-0.35,0.6],wpn:[1.6,0,0],armL:[-0.3,0,0.55],chest:[0.12,-0.6,0],hips:[0.04,-0.3,0],head:[0.04,0.3,0],legL:[-0.4,0,0],legR:[0.3,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.36,{armR:[-2.7,0,-0.15],wpn:[2.0,0,0],armL:[-2.5,0,0.15],chest:[-0.35,0,0],hips:[-0.08,0,0],head:[-0.3,0,0],legL:[-0.3,0,0],legR:[0.2,0,0]},eBack],
+   [0.5,{armR:[-1.0,0,-0.1],wpn:[3.0,0,0],armL:[-0.9,0,0.1],chest:[0.45,0,0],hips:[0.12,0,0],head:[0.22,0,0],legR:[-0.55,0,0],legL:[0.45,0,0]},eIO],
+   [0.68,{armR:[-0.9,0,-0.1],wpn:[2.9,0,0],armL:[-0.8,0,0.1],chest:[0.38,0,0],hips:[0.1,0,0],head:[0.18,0,0],legR:[-0.5,0,0],legL:[0.4,0,0]},eIO],[1,N]]],
+ /* staff (head points up): 0 point/thrust the staff head at the foe, 1 swing across, 2 raise and slam */
+ staff:[
+  [[0,N,eIO],[0.3,{armR:[-0.3,0,-0.3],wpn:[0.4,0,0],armL:[-0.4,0,0.4],chest:[-0.12,0.3,0],head:[-0.1,-0.2,0],legR:[0.25,0,0]},eBack],
+   [0.45,{armR:[-1.45,0,0.05],wpn:[2.3,0,0],armL:[-0.7,0,0.6],chest:[0.25,-0.2,0],hips:[0.06,-0.1,0],head:[0.1,0.15,0],legL:[-0.45,0,0],legR:[0.35,0,0]},eIO],
+   [0.7,{armR:[-1.4,0,0.05],wpn:[2.25,0,0],armL:[-0.6,0,0.55],chest:[0.2,-0.15,0],head:[0.08,0.1,0],legL:[-0.4,0,0],legR:[0.3,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.3,{armR:[-1.2,0.5,-1.0],wpn:[1.2,0,0],chest:[0,0.6,0],hips:[0,0.3,0],head:[0,-0.3,0],armL:[-0.3,0,0.4]},eBack],
+   [0.5,{armR:[-1.3,-0.4,0.6],wpn:[1.6,0,0],chest:[0.12,-0.6,0],hips:[0,-0.3,0],head:[0,0.3,0],armL:[-0.2,0,0.6],legL:[-0.4,0,0],legR:[0.3,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.38,{armR:[-2.8,0,-0.1],wpn:[0.1,0,0],armL:[-2.6,0,0.1],chest:[-0.35,0,0],head:[-0.35,0,0],hips:[-0.08,0,0],legL:[-0.3,0,0]},eBack],
+   [0.52,{armR:[-1.1,0,-0.1],wpn:[2.4,0,0],armL:[-1.0,0,0.1],chest:[0.45,0,0],head:[0.25,0,0],hips:[0.12,0,0],legR:[-0.55,0,0],legL:[0.45,0,0]},eIO],[1,N]]],
+ /* four fists: 0 right upper + left lower jab, 1 left upper + right lower jab, 2 all four raised then smashed down */
+ fist:[
+  [[0,N,eIO],[0.25,{armR:[0.5,0,-0.3],arm2L:[0.4,0,0.2],armL:[-0.8,0,0.5],arm2R:[-0.6,0,-0.4],chest:[-0.05,0.4,0],hips:[0,0.2,0],legR:[0.3,0,0]},eBack],
+   [0.42,{armR:[-1.55,0,0.45],arm2L:[-1.4,0,-0.35],armL:[-0.4,0,0.4],arm2R:[0.3,0,-0.2],chest:[0.25,-0.45,0],hips:[0.05,-0.2,0],head:[0.1,0.2,0],legL:[-0.5,0,0],legR:[0.4,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.25,{armL:[0.5,0,0.3],arm2R:[0.4,0,-0.2],armR:[-0.8,0,-0.5],arm2L:[-0.6,0,0.4],chest:[-0.05,-0.4,0],hips:[0,-0.2,0],legL:[0.3,0,0]},eBack],
+   [0.42,{armL:[-1.55,0,-0.45],arm2R:[-1.4,0,0.35],armR:[-0.4,0,-0.4],arm2L:[0.3,0,0.2],chest:[0.25,0.45,0],hips:[0.05,0.2,0],head:[0.1,-0.2,0],legR:[-0.5,0,0],legL:[0.4,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.4,{armR:[-2.8,0,-0.3],armL:[-2.8,0,0.3],arm2R:[-2.2,0,-0.5],arm2L:[-2.2,0,0.5],chest:[-0.4,0,0],head:[-0.3,0,0],hips:[-0.1,0,0],legL:[-0.4,0,0],legR:[-0.4,0,0]},eBack],
+   [0.55,{armR:[-0.9,0,0.2],armL:[-0.9,0,-0.2],arm2R:[-0.7,0,0.1],arm2L:[-0.7,0,-0.1],chest:[0.6,0,0],head:[0.3,0,0],hips:[0.15,0,0],legL:[0.3,0,0],legR:[0.3,0,0]},eIO],[0.75,{armR:[-0.8,0,0.2],armL:[-0.8,0,-0.2],arm2R:[-0.6,0,0.1],arm2L:[-0.6,0,-0.1],chest:[0.5,0,0],head:[0.25,0,0],hips:[0.12,0,0]},eIO],[1,N]]],
+ /* mantis scythes: 0 X-chop, 1 sideways reap, 2 double overhead chop */
+ scythe:[
+  [[0,N,eIO],[0.3,{armR:[-2.3,0,-0.7],armL:[-2.3,0,0.7],chest:[-0.25,0,0],head:[-0.2,0,0],hips:[-0.05,0,0]},eBack],
+   [0.46,{armR:[-0.8,0,0.55],armL:[-0.8,0,-0.55],chest:[0.4,0,0],head:[0.2,0,0],hips:[0.1,0,0],legL:[-0.3,0,0],legR:[0.25,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.3,{armR:[-1.4,0.4,-1.0],armL:[-0.6,0,0.6],chest:[0,0.6,0],hips:[0,0.3,0],head:[0,-0.25,0]},eBack],
+   [0.48,{armR:[-1.3,-0.4,0.8],armL:[-1.3,0,0.3],chest:[0.15,-0.6,0],hips:[0,-0.3,0],head:[0,0.3,0],legL:[-0.35,0,0]},eIO],[1,N]],
+  [[0,N,eIO],[0.38,{armR:[-2.9,0,-0.25],armL:[-2.9,0,0.25],chest:[-0.4,0,0],head:[-0.3,0,0],hips:[-0.1,0,0],legL:[-0.3,0,0],legR:[-0.3,0,0]},eBack],
+   [0.52,{armR:[-0.7,0,0.15],armL:[-0.7,0,-0.15],chest:[0.55,0,0],head:[0.3,0,0],hips:[0.14,0,0],legL:[0.25,0,0],legR:[0.25,0,0]},eIO],[1,N]]]
+};
+const STYC={
+ staff(k,t,idx){const e=eIO(Math.min(1,k*4)),w=Math.sin(t*12)*0.05;
+  if(idx===1)return mixPose(N,{armR:[-2.6+w,0,-0.15],wpn:[2.45,0,0],armL:[-2.4-w,0,0.3],chest:[-0.3,0,0],head:[-0.35,0,0],hips:[-0.06,0,0]},e);
+  return mixPose(N,{armR:[-1.5+w,0,0.05],wpn:[2.3,0,0],armL:[-0.9,0,0.65],chest:[0.15,-0.2,0],head:[0,0.15,0],legL:[-0.3,0,0],legR:[0.25,0,0]},e)},
+ spear(k,t,idx){const e=eIO(Math.min(1,k*4)),w=Math.sin(t*12)*0.05;return mixPose(N,{armR:[-2.5+w,0,-0.2],wpn:[2.5,0,0],armL:[-1.6,0,0.6],chest:[-0.25,0,0],head:[-0.3,0,0]},e)},
+ scythe(k,t,idx){const e=eIO(Math.min(1,k*4)),w=Math.sin(t*14)*0.08;return mixPose(N,{armR:[-2.4+w,0,-0.6],armL:[-2.4-w,0,0.6],chest:[-0.3,0,0],head:[-0.3,0,0]},e)},
+ fist(k,t,idx){const e=eIO(Math.min(1,k*4)),w=Math.sin(t*16)*0.1;return mixPose(N,{armR:[-2.6+w,0,-0.3],armL:[-2.6-w,0,0.3],arm2R:[-1.4-w,0,-0.5],arm2L:[-1.4+w,0,0.5],chest:[-0.3,0,0],head:[-0.35,0,0]},e)}
+};
+
+/*STY_END*/
 /* quadruped poses (legs swing in diagonal pairs) */
 const QW={head:[-0.4,0,0],chest:[-0.25,0,0],fl:[-0.5,0,0],fr:[-0.5,0,0],bl:[0.25,0,0],br:[0.25,0,0],tail:[-0.4,0,0],body:[-0.1,0,0]};
 const QH={head:[0.5,0,0],chest:[0.3,0,0],fl:[-1.0,0,0],fr:[-1.0,0,0],bl:[0.6,0,0],br:[0.6,0,0],tail:[0.35,0,0],body:[0.15,0,0]};
@@ -780,20 +860,21 @@ function poseQuad(st,k,t,o){
 /* ---- auto-rig ---- */
 const RIG_CACHE=new WeakMap(),GEO_ROT=new Map();
 function rotGeo(geo,yaw){if(!yaw)return geo;const k=geo.uuid+':'+yaw;if(!GEO_ROT.has(k)){const g=geo.clone();g.rotateY(yaw);GEO_ROT.set(k,g)}return GEO_ROT.get(k)}
-function setSkin(geo,n,fn){const si=new Uint16Array(n*4),sw=new Float32Array(n*4),w=new Float32Array(10);
+function setSkin(geo,n,fn){const si=new Uint16Array(n*4),sw=new Float32Array(n*4),w=new Float32Array(12);
  for(let i=0;i<n;i++){w.fill(0);fn(i,w);const idx=[...w.keys()].sort((a,b)=>w[b]-w[a]).slice(0,4);let s=0;for(const j of idx)s+=w[j];for(let k=0;k<4;k++){si[i*4+k]=idx[k];sw[i*4+k]=s>0?w[idx[k]]/s:(k===0?1:0)}}
  geo.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));geo.setAttribute('skinWeight',new THREE.Float32BufferAttribute(sw,4))}
 function computeSkin(geo,R={}){
- if(RIG_CACHE.has(geo))return RIG_CACHE.get(geo);const SH=R.sh??0.11,AI=R.armIn??0.085,AO=R.armOut??0.16,LEG=R.legs!==false;
+ if(RIG_CACHE.has(geo))return RIG_CACHE.get(geo);const SH=R.sh??0.11,AI=R.armIn??0.085,AO=R.armOut??0.16,LEG=R.legs!==false,HD=R.hd||[0.5,0.6],CH=R.ch||[0.3,0.42],AW=R.aw||[0.26,0.34,0.55,0.62],LGW=R.lg||[0.1,0.25];
  geo.computeBoundingBox();const bb=geo.boundingBox,y0=bb.min.y,H=bb.max.y-bb.min.y,cx=(bb.min.x+bb.max.x)/2,cz=(bb.min.z+bb.max.z)/2;
- const J={root:[cx,y0,cz],hips:[cx,y0+.26*H,cz],chest:[cx,y0+.42*H,cz],head:[cx,y0+.56*H,cz],armL:[cx+SH*H,y0+(R.shY??.52)*H,cz],armR:[cx-SH*H,y0+(R.shY??.52)*H,cz],legL:[cx+.055*H,y0+.24*H,cz],legR:[cx-.055*H,y0+.24*H,cz],back:[cx,y0+.55*H,cz-.05*H]};
+ const J={root:[cx,y0,cz],hips:[cx,y0+.26*H,cz],chest:[cx,y0+.42*H,cz],head:[cx,y0+(R.hd?R.hd[0]+0.02:.56)*H,cz],armL:[cx+SH*H,y0+(R.shY??.52)*H,cz],armR:[cx-SH*H,y0+(R.shY??.52)*H,cz],legL:[cx+.055*H,y0+.24*H,cz],legR:[cx-.055*H,y0+.24*H,cz],back:[cx,y0+.55*H,cz-.05*H]};
  const NAMES=['root','hips','chest','head','armL','armR','legL','legR','back'],PAR={hips:'root',chest:'hips',head:'chest',armL:'chest',armR:'chest',legL:'hips',legR:'hips',back:'chest'};
  const W=R.wpn,ai=W?(W.side<0?5:4):0;let HH,TT,SS;
  if(W){HH=W.hand;TT=W.tip;SS=[W.side*SH*0.85,(R.shY??.52),0];J.wpn=[cx+HH[0]*H,y0+HH[1]*H,cz+HH[2]*H];NAMES.push('wpn');PAR.wpn=W.side<0?'armR':'armL';
   J[W.side<0?'armR':'armL']=[cx+SS[0]*H,y0+SS[1]*H,cz]}
- const segD=(px,py,pz,A,B)=>{const ax=B[0]-A[0],ay=B[1]-A[1],az=B[2]-A[2],L=ax*ax+ay*ay+az*az;let t=((px-A[0])*ax+(py-A[1])*ay+(pz-A[2])*az)/L;const tc=Math.max(0,Math.min(1,t));const dx=px-A[0]-ax*tc,dy=py-A[1]-ay*tc,dz=pz-A[2]-az*tc;return[Math.sqrt(dx*dx+dy*dy+dz*dz),t]};
+ let A2L=-1,A2R=-1;if(R.arm2){J.arm2L=[cx+R.arm2.sh*H,y0+R.arm2.shY*H,cz];J.arm2R=[cx-R.arm2.sh*H,y0+R.arm2.shY*H,cz];NAMES.push('arm2L','arm2R');PAR.arm2L=PAR.arm2R='chest';A2L=NAMES.indexOf('arm2L');A2R=A2L+1}
+ const segD=(px,py,pz,A,B,lo=0)=>{const ax=B[0]-A[0],ay=B[1]-A[1],az=B[2]-A[2],L=ax*ax+ay*ay+az*az;let t=((px-A[0])*ax+(py-A[1])*ay+(pz-A[2])*az)/L;const tc=Math.max(lo,Math.min(1,t));const dx=px-A[0]-ax*tc,dy=py-A[1]-ay*tc,dz=pz-A[2]-az*tc;return[Math.sqrt(dx*dx+dy*dy+dz*dz),t]};
  const pos=geo.attributes.position;
- if(W){/* fit the real blade axis: PCA of vertices near the rough hand->tip line */
+ if(W&&W.fit!==false){/* fit the real blade axis: PCA of vertices near the rough hand->tip line */
   let C=[0,0,0],P=[];for(let i=0;i<pos.count;i+=2){const q=[(pos.getX(i)-cx)/H,(pos.getY(i)-y0)/H,(pos.getZ(i)-cz)/H];const [d,t]=segD(q[0],q[1],q[2],HH,TT);if(d<0.085&&t>0.18&&t<1.2){P.push(q);C[0]+=q[0];C[1]+=q[1];C[2]+=q[2]}}
   if(P.length>30){C=C.map(v=>v/P.length);const M=[[0,0,0],[0,0,0],[0,0,0]];for(const q of P){const d=[q[0]-C[0],q[1]-C[1],q[2]-C[2]];for(let a=0;a<3;a++)for(let b=0;b<3;b++)M[a][b]+=d[a]*d[b]}
    let v=[TT[0]-HH[0],TT[1]-HH[1],TT[2]-HH[2]];for(let it=0;it<30;it++){const nv=[0,1,2].map(a=>M[a][0]*v[0]+M[a][1]*v[1]+M[a][2]*v[2]);const l=Math.hypot(...nv)||1;v=nv.map(x=>x/l)}
@@ -804,7 +885,7 @@ function computeSkin(geo,R={}){
    W.r=W.r||Math.min(0.065,Math.max(0.03,ds[Math.floor(ds.length*0.85)]*1.35));J.wpn=[cx+HH[0]*H,y0+HH[1]*H,cz+HH[2]*H]}}
   /* keep only geometry that is actually joined to the blade (stops capes/robes near the hand being dragged along) */
   if(W){W.r=W.r||0.04;const n=pos.count,cand=new Uint8Array(n),rel=i=>[(pos.getX(i)-cx)/H,(pos.getY(i)-y0)/H,(pos.getZ(i)-cz)/H];
-  for(let i=0;i<n;i++){const q=rel(i),[d,t]=segD(q[0],q[1],q[2],HH,TT);if((t>0.02&&t<1.12&&d<W.r)||Math.hypot(q[0]-HH[0],q[1]-HH[1],q[2]-HH[2])<0.078)cand[i]=1+(d<W.r*0.6&&t>0.45&&t<0.95?1:0)}
+  for(let i=0;i<n;i++){const q=rel(i),[d,t]=segD(q[0],q[1],q[2],HH,TT,W.tb||0);if((t>(W.tb??0.02)&&t<1.12&&d<W.r)||Math.hypot(q[0]-HH[0],q[1]-HH[1],q[2]-HH[2])<0.078)cand[i]=1+(d<W.r*0.6&&t>0.45&&t<0.95?1:0)}
   const key=new Map(),rep=new Int32Array(n);for(let i=0;i<n;i++){if(!cand[i]){rep[i]=i;continue}const k=Math.round(pos.getX(i)*2e4)+','+Math.round(pos.getY(i)*2e4)+','+Math.round(pos.getZ(i)*2e4);if(!key.has(k))key.set(k,i);rep[i]=key.get(k)}
   const adj=new Map(),idx=geo.index?geo.index.array:null,add=(a,b)=>{a=rep[a];b=rep[b];if(a===b)return;let l=adj.get(a);if(!l)adj.set(a,l=[]);l.push(b)};
   const nt=idx?idx.length:n;for(let t=0;t<nt;t+=3){const a=idx?idx[t]:t,b=idx?idx[t+1]:t+1,c=idx?idx[t+2]:t+2;if(cand[a]&&cand[b]){add(a,b);add(b,a)}if(cand[b]&&cand[c]){add(b,c);add(c,b)}if(cand[a]&&cand[c]){add(a,c);add(c,a)}}
@@ -812,12 +893,12 @@ function computeSkin(geo,R={}){
   while(st.length){const v=st.pop(),l=adj.get(v);if(l)for(const u of l)if(!ok[u]){ok[u]=1;st.push(u)}}
   W.ok=i=>ok[rep[i]]===1}
  setSkin(geo,pos.count,(i,w)=>{const h=(pos.getY(i)-y0)/H,dx=(pos.getX(i)-cx)/H,dz=(pos.getZ(i)-cz)/H;
-  const head=sm(0.5,0.6,h),chest=sm(0.3,0.42,h)*(1-head);w[3]=head;w[2]=chest;w[1]=1-head-chest;
-  const arm=sm(AI,AO,Math.abs(dx))*sm(0.26,0.34,h)*(1-sm(0.55,0.62,h));if(arm>0){for(const j of [1,2,3])w[j]*=1-arm;w[dx>0?4:5]=arm}
-  const leg=LEG?1-sm(0.1,0.25,h):0;if(leg>0){const r=clamp(0.5-dx/0.05*0.5,0,1);for(const j of [1,2,3,4,5])w[j]*=1-leg;w[6]+=leg*(1-r);w[7]+=leg*r}
+  const head=sm(HD[0],HD[1],h),chest=sm(CH[0],CH[1],h)*(1-head);w[3]=head;w[2]=chest;w[1]=1-head-chest;
+  const arm=sm(AI,AO,Math.abs(dx))*sm(AW[0],AW[1],h)*(1-sm(AW[2],AW[3],h));if(arm>0){for(const j of [1,2,3])w[j]*=1-arm;const lo=A2L>=0&&h<R.arm2.y;w[lo?(dx>0?A2L:A2R):(dx>0?4:5)]=arm}
+  const leg=LEG?1-sm(LGW[0],LGW[1],h):0;if(leg>0){const r=clamp(0.5-dx/0.05*0.5,0,1);for(const j of [1,2,3,4,5])w[j]*=1-leg;w[6]+=leg*(1-r);w[7]+=leg*r}
   const bk=0.85*sm(0.05,0.16,-dz)*sm(0.18,0.34,h)*(1-sm(0.78,0.92,h));if(bk>0){for(let j=1;j<8;j++)w[j]*=1-bk;w[8]+=bk}
-  if(W){const [db,tb]=segD(dx,h,dz,HH,TT),rb=W.r||0.04,dh=Math.hypot(dx-HH[0],h-HH[1],dz-HH[2]);
-   let wb=(tb>0.04&&tb<1.1)?1-sm(rb*0.75,rb,db):0;wb=Math.max(wb,1-sm(0.045,0.075,dh));if(W.ok&&!W.ok(i))wb=0;
+  if(W){const [db,tb]=segD(dx,h,dz,HH,TT,W.tb||0),rb=W.r||0.04,dh=Math.hypot(dx-HH[0],h-HH[1],dz-HH[2]);
+   let wb=(tb>(W.tb??0.04)&&tb<1.1)?(W.fit===false?(db<rb?1:0):1-sm(rb*0.75,rb,db)):0;wb=Math.max(wb,1-sm(0.045,0.075,dh));if(W.ok&&!W.ok(i))wb=0;
    const [da]=segD(dx,h,dz,SS,HH);let wa=(dx*W.side>(W.armIn||0.07))?1-sm(0.075,0.11,da):0;
    let s=0;for(let j=0;j<9;j++)s+=w[j];s=s||1;const cur=w[ai]/s;wa=Math.max(wa,cur);
    for(let j=0;j<9;j++)w[j]=w[j]/s*(1-wb)*(1-wa);w[ai]+=(1-wb)*wa;w[9]=wb}});
@@ -825,20 +906,20 @@ function computeSkin(geo,R={}){
   const si=geo.attributes.skinIndex,sw=geo.attributes.skinWeight,ix=geo.index.array,wv=v=>{for(let k=0;k<4;k++)if(si.getComponent(v,k)===9)return sw.getComponent(v,k);return 0};
   let cut=0;for(let t=0;t<ix.length;t+=3){const a=wv(ix[t]),b=wv(ix[t+1]),c=wv(ix[t+2]);const mx=Math.max(a,b,c),mn=Math.min(a,b,c);let cutIt=mx-mn>0.55;if(!cutIt&&mx>0.02&&mn<0.98){const P=geo.attributes.position,e=(u,v)=>Math.hypot(P.getX(u)-P.getX(v),P.getY(u)-P.getY(v),P.getZ(u)-P.getZ(v));cutIt=Math.max(e(ix[t],ix[t+1]),e(ix[t+1],ix[t+2]),e(ix[t],ix[t+2]))>0.03*H}if(cutIt){ix[t+1]=ix[t+2]=ix[t];cut++}}geo.index.needsUpdate=true;R.cut=cut}
  const r={J,NAMES,PAR};if(W){const a=0.22;r.wbase=[(HH[0]+(TT[0]-HH[0])*a)*H+cx-J.wpn[0],(HH[1]+(TT[1]-HH[1])*a)*H+y0-J.wpn[1],(HH[2]+(TT[2]-HH[2])*a)*H+cz-J.wpn[2]];r.wtip=[TT[0]*H+cx-J.wpn[0],TT[1]*H+y0-J.wpn[1],TT[2]*H+cz-J.wpn[2]]}RIG_CACHE.set(geo,r);return r}
-function computeSkinQuad(geo){
+function computeSkinQuad(geo,R={}){const LG=R.leg||[0.3,0.46],HU=R.hu||[0.2,0.32],HQ=R.hh||[0.28,0.42];
  if(RIG_CACHE.has(geo))return RIG_CACHE.get(geo);
  geo.computeBoundingBox();const bb=geo.boundingBox,y0=bb.min.y,H=bb.max.y-bb.min.y,cx=(bb.min.x+bb.max.x)/2,cz=(bb.min.z+bb.max.z)/2,L=bb.max.z-bb.min.z,Wd=(bb.max.x-bb.min.x)/2;
- const J={root:[cx,y0,cz],body:[cx,y0+.5*H,cz-.18*L],chest:[cx,y0+.55*H,cz+.14*L],head:[cx,y0+.62*H,cz+.3*L],fl:[cx+.35*Wd,y0+.45*H,cz+.24*L],fr:[cx-.35*Wd,y0+.45*H,cz+.24*L],bl:[cx+.35*Wd,y0+.45*H,cz-.26*L],br:[cx-.35*Wd,y0+.45*H,cz-.26*L],tail:[cx,y0+.5*H,cz-.38*L]};
+ const J={root:[cx,y0,cz],body:[cx,y0+.5*H,cz-.18*L],chest:[cx,y0+.55*H,cz+.14*L],head:[cx,y0+.62*H,cz+.3*L],fl:[cx+.35*Wd,y0+LG[1]*H,cz+.24*L],fr:[cx-.35*Wd,y0+LG[1]*H,cz+.24*L],bl:[cx+.35*Wd,y0+LG[1]*H,cz-.26*L],br:[cx-.35*Wd,y0+LG[1]*H,cz-.26*L],tail:[cx,y0+.5*H,cz-.38*L]};
  const NAMES=['root','body','chest','head','fl','fr','bl','br','tail'],PAR={body:'root',chest:'body',head:'chest',fl:'chest',fr:'chest',bl:'body',br:'body',tail:'body'};
  const pos=geo.attributes.position;
  setSkin(geo,pos.count,(i,w)=>{const h=(pos.getY(i)-y0)/H,u=(pos.getZ(i)-cz)/L,dx=(pos.getX(i)-cx)/(Wd||1);
   const ch=sm(-0.1,0.12,u);w[2]=ch;w[1]=1-ch;
-  const head=sm(0.2,0.32,u)*sm(0.28,0.42,h);if(head>0){w[1]*=1-head;w[2]*=1-head;w[3]=head}
+  const head=sm(HU[0],HU[1],u)*sm(HQ[0],HQ[1],h);if(head>0){w[1]*=1-head;w[2]*=1-head;w[3]=head}
   const tail=sm(-0.3,-0.42,u)*sm(0.2,0.35,h);if(tail>0){for(const j of [1,2,3])w[j]*=1-tail;w[8]=tail}
-  const leg=1-sm(0.3,0.46,h);if(leg>0){const fr=sm(-0.06,0.08,u),r=clamp(0.5-dx*1.5,0,1);for(const j of [1,2,3,8])w[j]*=1-leg;w[4]+=leg*fr*(1-r);w[5]+=leg*fr*r;w[6]+=leg*(1-fr)*(1-r);w[7]+=leg*(1-fr)*r}});
+  const leg=1-sm(LG[0],LG[1],h);if(leg>0){const fr=sm(-0.06,0.08,u),r=clamp(0.5-dx*1.5,0,1);for(const j of [1,2,3,8])w[j]*=1-leg;w[4]+=leg*fr*(1-r);w[5]+=leg*fr*r;w[6]+=leg*(1-fr)*(1-r);w[7]+=leg*(1-fr)*r}});
  const r={J,NAMES,PAR};RIG_CACHE.set(geo,r);return r}
 function autoRig(mesh,R,quad){
- const geo=mesh.geometry,RR=quad?computeSkinQuad(geo):computeSkin(geo,R),{J,NAMES,PAR}=RR;const bones={};
+ const geo=mesh.geometry,RR=quad?computeSkinQuad(geo,R||{}):computeSkin(geo,R),{J,NAMES,PAR}=RR;const bones={};
  for(const nm of NAMES){const b=new THREE.Bone();b.name=nm;bones[nm]=b}
  for(const nm of NAMES){const p=J[nm];if(PAR[nm]){const q=J[PAR[nm]];bones[nm].position.set(p[0]-q[0],p[1]-q[1],p[2]-q[2]);bones[PAR[nm]].add(bones[nm])}else bones[nm].position.set(p[0],p[1],p[2])}
  const sk=new THREE.SkinnedMesh(geo,mesh.material);sk.position.copy(mesh.position);sk.quaternion.copy(mesh.quaternion);sk.scale.copy(mesh.scale);sk.frustumCulled=false;
@@ -927,13 +1008,13 @@ class Model3D{
   if(!usedClip&&Object.keys(this.rig).length){
    const KS=this.quad?QKEYS:RIG_KEYS,target=this.quad?poseQuad(st,k,t,extra):poseFor(st,k,t,extra);
    const rate=(st==='attack'||st==='hurt'||st==='slam'||st==='battack')?30:st==='dash'?20:10,a=1-Math.exp(-rate*dt);
-   for(const key of KS){const c=this.cur[key],g=target[key]||Z3;c[0]+=(g[0]-c[0])*a;c[1]+=(g[1]-c[1])*a;c[2]+=(g[2]-c[2])*a}
+   for(const key of KS){const c=this.cur[key],g=target[key]||(key==='arm2L'?target.armL:key==='arm2R'?target.armR:null)||Z3;c[0]+=(g[0]-c[0])*a;c[1]+=(g[1]-c[1])*a;c[2]+=(g[2]-c[2])*a}
    const bx=this.spX.step(clamp(this.speed*0.09,0,0.9)+Math.sin(t*1.7)*0.05,dt),bz=this.spZ.step(clamp(-yr*0.12,-0.6,0.6),dt),hl=this.spH.step(clamp(-yr*0.06,-0.35,0.35),dt);
    const C=this.cur,ab=this.amp.body??1,aa=this.amp.arm??1;
    if(this.quad){this.setBone('body',C.body);this.setBone('chest',C.chest);this.setBone('head',[C.head[0],C.head[1]+hl,C.head[2]]);
     for(const l of ['fl','fr','bl','br'])this.setBone(l,C[l]);this.setBone('tail',[C.tail[0]-bx*0.5,C.tail[1]+bz*1.5,C.tail[2]])}
    else{this.setBone('hips',C.hips,ab);if(this.rig.chest2){this.setBone('chest',C.chest,0.55*ab);this.setBone('chest2',C.chest,0.45*ab)}else this.setBone('chest',C.chest,ab);
-    this.setBone('head',[C.head[0],C.head[1]+hl,C.head[2]]);this.setBone('armL',C.armL,aa);this.setBone('armR',C.armR,aa);
+    this.setBone('head',[C.head[0],C.head[1]+hl,C.head[2]]);this.setBone('armL',C.armL,aa);this.setBone('armR',C.armR,aa);if(this.rig.arm2L){this.setBone('arm2L',C.arm2L,aa);this.setBone('arm2R',C.arm2R,aa)}if(extra.style&&this.rig.wpn)this.setBone('wpn',C.wpn);
     this.setBone('foreL',[Math.min(0,C.armL[0])*0.35,0,0]);this.setBone('foreR',[Math.min(0,C.armR[0])*0.35,0,0]);
     this.setBone('legL',C.legL);this.setBone('legR',C.legR);this.setBone('kneeL',[Math.max(0,C.legL[0])*0.9,0,0]);this.setBone('kneeR',[Math.max(0,C.legR[0])*0.9,0,0]);
     this.setBone('back',[C.back[0]+bx,C.back[1],C.back[2]+bz])}}
@@ -1051,7 +1132,7 @@ function buildHub(){
 const GLB={};
 let hero=null,ally=null;
 function mkModel(key,extra={}){const src=GLB_SRC[key]||key,d={...MODEL_DEF[src],...extra},g=GLB[key];const hh=extra.h||MODEL_DEF[key].h||d.h||1.6,bh=g.userData.h||1;
-  return new Model3D(g,{...d,scale:hh/bh,rig:d.skinned||(g.animations&&g.animations.length)?null:'auto',shadow:extra.shadow??hh*0.5})}
+  return new Model3D(g,{...d,scale:hh/bh,rig:d.norig||d.skinned||(g.animations&&g.animations.length)?null:'auto',shadow:extra.shadow??hh*0.5})}
 /* model pool: reuse built characters instead of rebuilding (no spawn hitches, no GPU leaks) */
 const MPOOL=new Map();
 function poolKey(key,ex){return key+'|'+(ex.h||'')+'|'+JSON.stringify(ex.tint||0)+'|'+JSON.stringify(ex.glow||0)}
@@ -1298,7 +1379,7 @@ function healHero(n){const v=Math.round(n);hero.hp=Math.min(hero.maxHp,hero.hp+v
 
 /* caster context: the same skill code runs for the hero or for the puppet */
 function mkCaster(u,isP,mul){return{u,isP,mul:mul??1,get pos(){return u.pos},get fx(){return u.fx??1},set fx(v){u.fx=v},get fz(){return u.fz??0},set fz(v){u.fz=v},get y(){return u.y||0},
- anim(st,d,i){if(!isP)setHeroAnim(st,d,i);else{u.state='cast';u.st=0;u.castDur=d}},banner(...a){if(!isP)showBanner(...a)},face(a){u.fx=Math.cos(a);u.fz=Math.sin(a)},dark(v){if(!isP&&v)darkT=Math.max(darkT,v)}}}
+ anim(st,d,i){if(!isP)setHeroAnim(st,d,i);else{u.state=st==='attack'?'attack':'cast';u.aIdx=i||0;u.st=0;u.castDur=d}},banner(...a){if(!isP)showBanner(...a)},face(a){u.fx=Math.cos(a);u.fz=Math.sin(a)},dark(v){if(!isP&&v)darkT=Math.max(darkT,v)}}}
 let _hc=null;function HC(){if(!_hc||_hc.u!==hero)_hc=mkCaster(hero,false,1);return _hc}
 const near1=(x,z,r)=>enemies.filter(e=>e.alive&&e.state!=='spawn'&&Math.hypot(e.pos.x-x,e.pos.z-z)<r+e.radius);
 const aimAng=(C=HC())=>{const t=boss&&boss.alive?boss:nearestEnemy(14,C.pos);if(t)return Math.atan2(t.pos.z-C.pos.z,t.pos.x-C.pos.x);return Math.atan2(C.fz,C.fx)};
