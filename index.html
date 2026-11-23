@@ -259,7 +259,7 @@ const MODEL_DEF={
  frostwolf:{url:'models/mob_frostwolf.glb',fallback:'wolf',quad:true,geoYaw:-Math.PI/2,h:1.2,glow:{h:188,w:16,v:0.65,s:0.35,i:2.4,pcol:0xbff4ff,rate:15}},
  prop_meteor:{url:'models/prop_meteor.glb',prop:true},prop_ice:{url:'models/prop_ice.glb',prop:true},prop_pagoda:{url:'models/prop_pagoda.glb',prop:true}
 };
-const BUILD='5.0';/* v4.2 */const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
+const BUILD='5.0.1';/* v4.2 */const IS_HOMESCREEN=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 (function selfUpdate(){try{if(!/^https?:/.test(location.protocol)||location.hostname.endsWith('claude.ai')||location.hostname.includes('claudeusercontent'))return;
  fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(!m||m[1]===BUILD)return;
   const k='xn_upd_'+m[1];if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');location.replace(location.pathname+'?v='+m[1])}).catch(()=>{})}catch(e){}})();
@@ -360,32 +360,32 @@ const SKT=[
 const SKT_BY=Object.fromEntries(SKT.map(k=>[k.id,k]));
 /* ===== PUPPETS 傀儡 v5 — 7 puppets, each with 3 own skills, 3 evolution stages ===== */
 const PUPS=[
- {id:'sword',ch:-1,el:'sword',col:0xbfe0ff,css:'#bfe0ff',melee:1,h:[1.6,1.68,1.75],
+ {id:'sword',ch:-1,el:'sword',col:0xbfe0ff,css:'#bfe0ff',melee:1,h:[1.55,1.62,1.7],
   cn:['剑童','剑修','剑仙'],en:['Sword Youth','Sword Cultivator','Sword Immortal'],desc:'凡人少年，一步步修成剑仙 · A mortal boy who grows into a sword immortal',
   sk:[['疾风剑','Swift Slash','ps_sword0',5,ppDash,['疾冲一剑','进阶：双重疾斩','极：三连斩 + 剑气']],
       ['剑气纵横','Sword Qi Barrage','ps_sword1',8,ppQi,['三道剑气','进阶：五道剑气','极：七道剑气 + 巨型剑气']],
       ['御剑诀','Flying Swords','ps_sword2',14,ppFly,['御使四剑','进阶：七剑齐飞','极：十二飞剑']]]},
- {id:'mantis',ch:0,el:'sword',col:0x5aff8a,css:'#7affa0',melee:1,h:[1.75,1.9,2.05],
+ {id:'mantis',ch:0,el:'sword',col:0x5aff8a,css:'#7affa0',melee:1,h:[1.5,1.65,1.8],
   cn:['灵螳','玄甲螳','螳皇'],en:['Spirit Mantis','Armored Mantis','Mantis King'],desc:'神秘螳螂，以双臂利刃斩敌 · A mystical mantis with blade arms',
   sk:[['螳臂斩','Scythe X-Slash','ps_mantis0',5,ppX,['十字斩','进阶：双重十字斩','极：十字斩 + 飞刃']],
       ['旋刃风暴','Blade Whirl','ps_mantis1',9,ppWhirl,['旋身刃风','进阶：刃风更大更久','极：刃风追敌']],
       ['千刃斩','Thousand Cuts','ps_mantis2',14,ppCuts,['八连斩','进阶：十四连斩','极：二十二斩 + 终结十字']]]},
- {id:'orc',ch:1,el:'sword',col:0xffa040,css:'#ffb060',melee:1,h:[2.0,2.15,2.3],
+ {id:'orc',ch:1,el:'sword',col:0xffa040,css:'#ffb060',melee:1,h:[1.6,1.75,1.9],
   cn:['四臂魔兵','四臂战魔','四臂魔帝'],en:['Orc Brawler','Orc Champion','Orc Titan'],desc:'远古四臂兽人，拳拳到肉 · An ancient four-armed orc fighter',
   sk:[['四臂连拳','Four-Fist Barrage','ps_orc0',5,ppFists,['四连拳','进阶：八连拳','极：十二连拳']],
       ['碎地击','Ground Smash','ps_orc1',9,ppSmash,['跃起砸地','进阶：裂地更长','极：双重砸地']],
       ['天崩拳','Sky-Breaking Fist','ps_orc2',15,ppSkyFist,['巨拳天降','进阶：巨拳更大','极：三拳崩天']]]},
- {id:'demon',ch:2,el:'dark',col:0xff2a4a,css:'#ff6a80',melee:0,h:[1.8,1.9,2.0],
+ {id:'demon',ch:2,el:'dark',col:0xff2a4a,css:'#ff6a80',melee:0,h:[1.6,1.7,1.8],
   cn:['魔卫','血魔卫','魔卫之主'],en:['Demon Guard','Blood Demon Guard','Demon Guardian Lord'],desc:'邪恶魔卫，诅咒与血咒 · An evil guardian of curses and blood',
   sk:[['血咒','Blood Curse','ps_demon0',6,ppCurse,['诅咒一敌','进阶：诅咒三敌','极：诅咒五敌，咒爆']],
       ['血矛','Blood Spears','ps_demon1',9,ppSpears,['一道血矛','进阶：三道血矛','极：五道血矛']],
       ['血月祭','Blood Moon Ritual','ps_demon2',15,ppMoon,['血月吸魂，为主人回血','进阶：血月更大','极：血月爆裂']]]},
- {id:'dragon',ch:3,el:'fire',el2:'ice',col:0xff6a3a,css:'#ff9a7a',melee:0,h:[1.45,1.75,2.1],float:0.15,
+ {id:'dragon',ch:3,el:'fire',el2:'ice',col:0xff6a3a,css:'#ff9a7a',melee:0,h:[1.15,1.35,1.6],float:0.15,
   cn:['双首幼龙','冰火双龙','太古双首龙'],en:['Twin-Head Whelp','Fire-Ice Dragon','Ancient Twin Dragon'],desc:'冰火双首龙，一首喷火一首吐冰 · A two-headed dragon of fire and ice',
   sk:[['冰火吐息','Fire & Ice Breath','ps_dragon0',6,ppBreath,['双息喷吐','进阶：吐息更久','极：吐息更远更猛']],
       ['冰火流星','Fire-Ice Meteors','ps_dragon1',10,ppMeteors,['四颗流星','进阶：七颗流星','极：十一颗流星']],
       ['阴阳龙卷','Yin-Yang Dragons','ps_dragon2',16,ppYinYang,['火龙出击','进阶：冰火双龙','极：双龙缠绕 + 终爆']]]},
- {id:'space',ch:4,el:'thunder',col:0xb48aff,css:'#c9a0ff',melee:0,h:[1.8,1.9,2.05],
+ {id:'space',ch:4,el:'thunder',col:0xb48aff,css:'#c9a0ff',melee:0,h:[1.6,1.7,1.85],
   cn:['星域武者','星河战将','宇宙战神'],en:['Star Warrior','Galaxy General','Universe War God'],desc:'来自星空的远古战士，撕裂空间 · An ancient warrior from space who splits space',
   sk:[['空间斩','Void Slash','ps_space0',6,ppRift,['一道空间裂痕','进阶：双重裂痕','极：三重裂痕 + 空爆']],
       ['星门','Star Gate','ps_space1',10,ppGate,['星门吞噬','进阶：星门更强','极：双星门']],
